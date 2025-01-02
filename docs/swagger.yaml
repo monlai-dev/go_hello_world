@@ -1,6 +1,26 @@
 basePath: /
 definitions:
-  models.Student:
+  models.Account:
+    description: Account model
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      password:
+        type: string
+      phone:
+        type: string
+      role:
+        type: string
+      updated_at:
+        type: string
+      userName:
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -16,40 +36,86 @@ info:
   title: Swagger Example API
   version: "1.0"
 paths:
-  /students:
-    get:
-      description: Get all students
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/models.Student'
-            type: array
-      summary: Get all students
-      tags:
-      - students
+  /account:
     post:
       consumes:
       - application/json
-      description: Create a new student with the input payload
+      description: Create a new account
       parameters:
-      - description: Student
+      - description: User Name
         in: body
-        name: student
+        name: userName
         required: true
         schema:
-          $ref: '#/definitions/models.Student'
+          type: string
+      - description: Password
+        in: body
+        name: password
+        required: true
+        schema:
+          type: string
+      - description: Email
+        in: body
+        name: email
+        required: true
+        schema:
+          type: string
+      - description: Phone
+        in: body
+        name: phone
+        required: true
+        schema:
+          type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Student'
-      summary: Create a new student
+            $ref: '#/definitions/models.Account'
+      summary: Create a new account
       tags:
-      - students
+      - account
+  /account/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an account
+      parameters:
+      - description: Account ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account deleted
+          schema:
+            type: string
+      summary: Delete an account
+      tags:
+      - account
+  /account/{userName}:
+    get:
+      consumes:
+      - application/json
+      description: Get an account by user name
+      parameters:
+      - description: User Name
+        in: path
+        name: userName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Account'
+      summary: Get an account by user name
+      tags:
+      - account
 swagger: "2.0"

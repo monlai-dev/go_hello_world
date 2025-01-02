@@ -18,30 +18,9 @@
     "host": "localhost:8080",
     "basePath": "/",
     "paths": {
-        "/students": {
-            "get": {
-                "description": "Get all students",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "students"
-                ],
-                "summary": "Get all students",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Student"
-                            }
-                        }
-                    }
-                }
-            },
+        "/account": {
             "post": {
-                "description": "Create a new student with the input payload",
+                "description": "Create a new account",
                 "consumes": [
                     "application/json"
                 ],
@@ -49,17 +28,44 @@
                     "application/json"
                 ],
                 "tags": [
-                    "students"
+                    "account"
                 ],
-                "summary": "Create a new student",
+                "summary": "Create a new account",
                 "parameters": [
                     {
-                        "description": "Student",
-                        "name": "student",
+                        "description": "User Name",
+                        "name": "userName",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Student"
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Password",
+                        "name": "password",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Email",
+                        "name": "email",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Phone",
+                        "name": "phone",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ],
@@ -67,7 +73,71 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Student"
+                            "$ref": "#/definitions/models.Account"
+                        }
+                    }
+                }
+            }
+        },
+        "/account/{id}": {
+            "delete": {
+                "description": "Delete an account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Delete an account",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Account ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Account deleted",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/account/{userName}": {
+            "get": {
+                "description": "Get an account by user name",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "account"
+                ],
+                "summary": "Get an account by user name",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User Name",
+                        "name": "userName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Account"
                         }
                     }
                 }
@@ -75,8 +145,38 @@
         }
     },
     "definitions": {
-        "models.Student": {
-            "type": "object"
+        "models.Account": {
+            "description": "Account model",
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "userName": {
+                    "type": "string"
+                }
+            }
         }
     }
 }

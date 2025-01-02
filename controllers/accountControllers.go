@@ -11,11 +11,7 @@ import (
 
 	
 
-// CreateStudent godoc
-// @Summary Create a new student
-// @Description Create a new student with the input payload
-// @Success 200 {object} model.Student
-// @Router /students [post]
+
 func CreateStudent(c *gin.Context) {
 
 	account := c.ShouldBind(&models.Account{})
@@ -31,13 +27,7 @@ func CreateStudent(c *gin.Context) {
 
 }
 
-// GetStudents godoc
-// @Summary Get all students
-// @Description Get all students
-// @Tags students
-// @Produce  json
-// @Success 200 {array} model.Student
-// @Router /students [get]
+
 func GetStudents(c *gin.Context) {
 
 	var accounts []models.Account
@@ -45,13 +35,7 @@ func GetStudents(c *gin.Context) {
 	c.JSON(http.StatusOK, accounts)
 }
 
-// DeleteStudent godoc
-// @Summary Delete a student
-// @Description Delete a student
-// @Tags students
-// @Param id path int true "Student ID"
-// @Success 200 {string} string "Student deleted"
-// @Router /students/{id} [delete]
+
 func DeleteStudent(c *gin.Context) {
 
 	result := initializer.DB.Where("id = ?", c.Param("id")).Delete(&models.Account{})
