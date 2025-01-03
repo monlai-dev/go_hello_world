@@ -41,7 +41,9 @@ func init() {
 
 func main() {
 
-	var accountService services.AccountServiceInterface = services.NewAccountService(initializer.DB)
+	var addressService services.AddressServiceInterface = services.NewAddressService(initializer.DB)
+
+	var accountService services.AccountServiceInterface = services.NewAccountService(initializer.DB, addressService)
 
 	r := gin.Default()
 	r.Use(gin.Logger())

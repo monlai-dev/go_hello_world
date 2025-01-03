@@ -17,5 +17,5 @@ type AccountServiceInterface interface {
 	GetAllAccounts() ([]models.Account, error)
 	GetRandomAccount() (models.Account, error)
 	GetAllHomelessAccounts() ([]models.Account, error)
-	UpdateAddress(id int, address request_models.AddressRequest) error
+	UpdateAddress(email string, address request_models.AddressRequest) error
 }

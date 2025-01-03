@@ -11,7 +11,7 @@ import (
 	"webapp/services"
 )
 
-func RegisterRoutes(r *gin.Engine, accountService services.AccountService) {
+func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterface) {
 	// Public routes
 	// @Summary Login
 	// @Description Login
@@ -148,7 +148,31 @@ func RegisterRoutes(r *gin.Engine, accountService services.AccountService) {
 				Message:      "Account retrieved successfully",
 				Data:         []interface{}{account},
 			})
-			
+
+		})
+
+		accountGroup.PUT("/:email", func(c *gin.Context) {
+			email := c.Param("email")
+			var address request_models.AddressRequest
+			if err := c.ShouldBindJSON(&address); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+
+			err := accountService.UpdateAddress(email, address)
+
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, response_models.Response{
+					ResponseCode: http.StatusInternalServerError,
+					Message:      "Error updating address",
+				})
+				return
+			}
+
+			c.JSON(http.StatusOK, response_models.Response{
+				ResponseCode: http.StatusOK,
+				Message:      "Address updated successfully",
+			})
 		})
 	}
 

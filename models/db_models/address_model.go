@@ -10,5 +10,5 @@ type Address struct {
 	City      string `json:"city"`
 	State     string `json:"state"`
 	Zip       string `json:"zip"`
-	AccountID uint   `json:"account_id"`
+	AccountID *uint  `json:"account_id"`
 }

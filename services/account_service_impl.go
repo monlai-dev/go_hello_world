@@ -14,9 +14,10 @@ type accountService struct {
 	addressService AddressServiceInterface
 }
 
-func NewAccountService(db *gorm.DB) AccountServiceInterface {
+func NewAccountService(db *gorm.DB, addressService AddressServiceInterface) AccountServiceInterface {
 	return &accountService{
-		db: db,
+		db:             db,
+		addressService: addressService,
 	}
 
 }
@@ -208,7 +209,36 @@ func (service *accountService) GetAllHomelessAccounts() ([]models.Account, error
 	return accounts, nil
 }
 
-func (service *accountService) UpdateAddress(id int, address request_models.AddressRequest) error {
-	return nil
-	//do later
+func (service *accountService) UpdateAddress(email string, addressRequest request_models.AddressRequest) error {
+	// Start a transaction
+	tx := service.db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Fetch account
+	account, err := service.GetAccountByEmail(email)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to fetch account with email %d: %w", email, err)
+	}
+
+	// Create new address
+	newAddress, err := service.addressService.CreateAddress(addressRequest)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create address: %w", err)
+	}
+
+	// Update account with new address
+	account.Address = &newAddress
+	if err := tx.Model(&account).Updates(&account).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to update account with email %d: %w", email, err)
+	}
+
+	// Commit the transaction
+	return tx.Commit().Error
 }
