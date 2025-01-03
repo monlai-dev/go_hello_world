@@ -7,11 +7,18 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func init(){
-	godotenv.Load()
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		return
+	}
 	initializer.ConnectDb()
 }
 
 func main() {
-	initializer.DB.AutoMigrate(&model.Account{})
+	err := initializer.DB.AutoMigrate(&model.Account{}, &model.Address{})
+
+	if err != nil {
+		return
+	}
 }

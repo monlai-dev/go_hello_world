@@ -2,16 +2,17 @@
 package routes
 
 import (
-    "net/http"
-    "webapp/middleware"
-    "webapp/services"
-    "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
+	"net/http"
+	"strconv"
+	"webapp/middleware"
 	"webapp/models/request_models"
 	"webapp/models/response_models"
+	"webapp/services"
 )
 
 func RegisterRoutes(r *gin.Engine, accountService services.AccountService) {
-    // Public routes
+	// Public routes
 	// @Summary Login
 	// @Description Login
 	// @Tags account
@@ -19,62 +20,59 @@ func RegisterRoutes(r *gin.Engine, accountService services.AccountService) {
 	// @Produce json
 	// @Param email body string true "Email"
 	// @Param password body string true "Password"
-    r.POST("/login", func(c *gin.Context) {
-        var loginRequest request_models.LoginRequest
-        if err := c.ShouldBindJSON(&loginRequest); err != nil {
-            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-            return
-        }
+	r.POST("/login", func(c *gin.Context) {
+		var loginRequest request_models.LoginRequest
+		if err := c.ShouldBindJSON(&loginRequest); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 
-        token, err := accountService.Login(loginRequest)
-        if err != nil {
-            c.JSON(http.StatusInternalServerError, response_models.Response{
+		token, err := accountService.Login(loginRequest)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, response_models.Response{
 				ResponseCode: http.StatusForbidden,
 				Message:      "Invalid email or password",
 			})
-            return
-        }
-        c.JSON(http.StatusOK, response_models.Response{
+			return
+		}
+
+		c.JSON(http.StatusOK, response_models.Response{
 			ResponseCode: http.StatusOK,
 			Message:      "Login successful",
 			Data:         []interface{}{token},
 		})
-    })
+	})
 
+	r.POST("/register", func(c *gin.Context) {
+		var account request_models.RegisterRequest
 
+		if err := c.ShouldBindJSON(&account); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 
-    r.POST("/register", func(c *gin.Context) {
-        var account request_models.RegisterRequest
+			return
+		}
 
-        if err := c.ShouldBindJSON(&account); err != nil {
-            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			
-            return
-        }
+		createdAccount, err := accountService.CreateAccount(account)
 
-        createdAccount, err := accountService.CreateAccount(account)
-
-        if err != nil {
-            c.JSON(http.StatusInternalServerError, response_models.Response{
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, response_models.Response{
 				ResponseCode: http.StatusInternalServerError,
 				Message:      "Error creating account",
 			})
-            return
-        }
+			return
+		}
 
-        c.JSON(http.StatusOK, response_models.Response{
+		c.JSON(http.StatusOK, response_models.Response{
 			ResponseCode: http.StatusOK,
 			Message:      "Account created successfully",
 			Data:         []interface{}{createdAccount},
 		})
-    })
+	})
 
-
-
-    // Protected routes
-    accountGroup := r.Group("/account")
-    accountGroup.Use(middleware.JWTAuthMiddleware())
-    {	
+	// Protected routes
+	accountGroup := r.Group("/account")
+	accountGroup.Use(middleware.JWTAuthMiddleware())
+	{
 		// @Summary Get all accounts
 		// @Description Get all accounts
 		// @Tags account
@@ -82,29 +80,81 @@ func RegisterRoutes(r *gin.Engine, accountService services.AccountService) {
 		// @Produce json
 		// @Success 200 {object} []models.Account
 		// @Router /account/list-all [get]
-        accountGroup.GET("/list-all", func(c *gin.Context) {
-            accounts, err := accountService.GetAllAccounts()
-            if err != nil {
-                c.JSON(http.StatusOK, response_models.Response{
+		accountGroup.GET("/list-all", func(c *gin.Context) {
+			accounts, err := accountService.GetAllAccounts()
+			if err != nil {
+				c.JSON(http.StatusOK, response_models.Response{
 					ResponseCode: http.StatusBadRequest,
 					Message:      "Error getting accounts",
 				})
-                return
-            }
-            c.JSON(http.StatusOK, response_models.Response{
+				return
+			}
+
+			c.JSON(http.StatusOK, response_models.Response{
 				ResponseCode: http.StatusOK,
 				Message:      "Accounts retrieved successfully",
 				Data:         []interface{}{accounts},
 			})
-        })
-    }
+		})
 
+		accountGroup.GET("/random", func(c *gin.Context) {
+			account, err := accountService.GetRandomAccount()
+			if err != nil {
+				c.JSON(http.StatusOK, response_models.Response{
+					ResponseCode: http.StatusBadRequest,
+					Message:      "Error getting account",
+				})
+				return
+			}
+			c.JSON(http.StatusOK, response_models.Response{
+				ResponseCode: http.StatusOK,
+				Message:      "Account retrieved successfully",
+				Data:         []interface{}{account},
+			})
+		})
 
+		accountGroup.GET("/:id", func(c *gin.Context) {
+			id, _ := strconv.Atoi(c.Param("id"))
+			account, err := accountService.GetAccountById(id)
 
-	
-    r.GET("/", func(c *gin.Context) {
-        c.JSON(http.StatusOK, gin.H{
-            "message": "pong",
-        })
-    })
+			if err != nil {
+				c.JSON(http.StatusOK, response_models.Response{
+					ResponseCode: http.StatusBadRequest,
+					Message:      "Error getting account",
+				})
+				return
+			}
+
+			c.JSON(http.StatusOK, response_models.Response{
+				ResponseCode: http.StatusOK,
+				Message:      "Account retrieved successfully",
+				Data:         []interface{}{account},
+			})
+		})
+
+		accountGroup.GET("/no-home", func(c *gin.Context) {
+			account, err := accountService.GetAllHomelessAccounts()
+
+			if err != nil {
+				c.JSON(http.StatusOK, response_models.Response{
+					ResponseCode: http.StatusBadRequest,
+					Message:      "Error",
+				})
+				return
+			}
+
+			c.JSON(http.StatusOK, response_models.Response{
+				ResponseCode: http.StatusOK,
+				Message:      "Account retrieved successfully",
+				Data:         []interface{}{account},
+			})
+			
+		})
+	}
+
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "pong",
+		})
+	})
 }

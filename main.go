@@ -8,10 +8,10 @@ import (
 	"github.com/swaggo/gin-swagger"
 	"log"
 	_ "webapp/docs"
-	initializer "webapp/initializer"
+	"webapp/initializer"
+	"webapp/middleware"
 	"webapp/routes"
 	"webapp/services"
-	"webapp/middleware"
 )
 
 func init() {
@@ -41,7 +41,7 @@ func init() {
 
 func main() {
 
-	var accountService services.AccountService = services.NewAccountService(initializer.DB)
+	var accountService services.AccountServiceInterface = services.NewAccountService(initializer.DB)
 
 	r := gin.Default()
 	r.Use(gin.Logger())
@@ -51,7 +51,11 @@ func main() {
 
 	r.Use(middleware.CORSMiddleware())
 	routes.RegisterRoutes(r, accountService)
-	
-	r.Run() // listen and serve on 0.0.0.0:8080
+
+	err := r.Run()
+
+	if err != nil {
+		return
+	} // listen and serve on 0.0.0.0:8080
 
 }
