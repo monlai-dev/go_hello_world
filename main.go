@@ -48,68 +48,10 @@ func main() {
 	r.Use(gin.Recovery())
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	r.Use(middleware.CORSMiddleware())
 	routes.RegisterRoutes(r, accountService)
-	// routes.
-	// // r.POST("/students", controllers.CreateStudent)
-	// Group := r.Group("/account")
-	// Group.Use(middleware.JWTAuthMiddleware())
-
-	// Group.GET("/list-all", func(c *gin.Context) {
-
-	// 	accounts, err := accountService.GetAllAccounts()
-	// 	if err != nil {
-	// 		c.JSON(500, gin.H{"error": err.Error()})
-	// 		return
-	// 	}
-	// 	c.JSON(http.StatusOK, accounts)
-	// })
-
-	// r.GET("/", func(c *gin.Context) {
-	// 	c.JSON(200, gin.H{
-	// 		"message": "pong",
-	// 	})
-	// })
-
-	// r.POST("/login", func(c *gin.Context) {
-
-	// 	var loginRequest request_models.LoginRequest
-
-	// 	if err := c.ShouldBindJSON(&loginRequest); err != nil {
-	// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	// 		return
-	// 	}
-
-	// 	token, err := accountService.Login(loginRequest)
-
-	// 	if err != nil {
-	// 		c.JSON(500, gin.H{"error": "Invalid email or password"})
-	// 		return
-	// 	}
-
-	// 	c.JSON(200, token)
-	// })
-
-	// r.POST("/register", func(c *gin.Context) {
-
-	// 	var account request_models.RegisterRequest
-
-	//     if err := c.ShouldBindJSON(&account); err != nil {
-	//         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	//         return
-	//     }
-
-	// 	createdAccount, err := accountService.CreateAccount(account)
-
-	// 	if err != nil {
-	// 		c.JSON(500, gin.H{"error": err.Error()})
-	// 		log.Fatal(err)
-	// 		return
-	// 	}
-
-	// 	c.JSON(200, gin.H{"account": createdAccount})
-	// })
-
+	
 	r.Run() // listen and serve on 0.0.0.0:8080
 
 }
