@@ -19,7 +19,7 @@ definitions:
         type: string
       updated_at:
         type: string
-      userName:
+      username:
         type: string
     type: object
 host: localhost:8080
