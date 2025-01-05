@@ -16,6 +16,13 @@ func NewAddressService(db *gorm.DB) AddressServiceInterface {
 }
 
 func (service *AddressService) CreateAddress(request request_models.AddressRequest) (models.Address, error) {
+	tx := service.db.Begin()
+
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
 
 	address := models.Address{
 		Street: request.Street,
@@ -29,5 +36,5 @@ func (service *AddressService) CreateAddress(request request_models.AddressReque
 		return models.Address{}, result.Error
 	}
 
-	return address, nil
+	return address, tx.Commit().Error
 }

@@ -4,6 +4,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 	"github.com/swaggo/files"
 	"github.com/swaggo/gin-swagger"
 	"log"
@@ -40,10 +41,15 @@ func init() {
 // @BasePath /
 
 func main() {
+	config := &redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	}
+	var conn = *redis.NewClient(config)
+	var addressService = services.NewAddressService(initializer.DB)
 
-	var addressService services.AddressServiceInterface = services.NewAddressService(initializer.DB)
-
-	var accountService services.AccountServiceInterface = services.NewAccountService(initializer.DB, addressService)
+	var accountService = services.NewAccountService(initializer.DB, addressService, &conn)
 
 	r := gin.Default()
 	r.Use(gin.Logger())
@@ -52,12 +58,12 @@ func main() {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	r.Use(middleware.CORSMiddleware())
-	routes.RegisterRoutes(r, accountService)
+	routes.RegisterRoutes(r, accountService, &conn)
 
 	err := r.Run()
 
 	if err != nil {
 		return
-	} // listen and serve on 0.0.0.0:8080
+	}
 
 }

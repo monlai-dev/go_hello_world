@@ -3,6 +3,7 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"net/http"
 	"strconv"
 	"webapp/middleware"
@@ -11,7 +12,7 @@ import (
 	"webapp/services"
 )
 
-func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterface) {
+func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterface, redisClient *redis.Client) {
 	// Public routes
 	// @Summary Login
 	// @Description Login
@@ -71,7 +72,7 @@ func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterfa
 
 	// Protected routes
 	accountGroup := r.Group("/account")
-	accountGroup.Use(middleware.JWTAuthMiddleware())
+	accountGroup.Use(middleware.JWTAuthMiddleware(redisClient))
 	{
 		// @Summary Get all accounts
 		// @Description Get all accounts
@@ -151,19 +152,24 @@ func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterfa
 
 		})
 
-		accountGroup.PUT("/:email", func(c *gin.Context) {
-			email := c.Param("email")
+		accountGroup.PUT("/update-address", func(c *gin.Context) {
+			email, _ := c.Get("email")
+
 			var address request_models.AddressRequest
+
 			if err := c.ShouldBindJSON(&address); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				c.JSON(http.StatusOK, response_models.Response{
+					ResponseCode: http.StatusBadRequest,
+					Message:      "Invalid address",
+				})
 				return
 			}
 
-			err := accountService.UpdateAddress(email, address)
+			err := accountService.UpdateAddress(email.(string), address)
 
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, response_models.Response{
-					ResponseCode: http.StatusInternalServerError,
+				c.JSON(http.StatusOK, response_models.Response{
+					ResponseCode: http.StatusBadRequest,
 					Message:      "Error updating address",
 				})
 				return
@@ -172,6 +178,24 @@ func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterfa
 			c.JSON(http.StatusOK, response_models.Response{
 				ResponseCode: http.StatusOK,
 				Message:      "Address updated successfully",
+			})
+		})
+
+		accountGroup.POST("/logout", func(c *gin.Context) {
+			authHeader := c.GetHeader("Authorization")
+			tokenString := authHeader[7:]
+			err := accountService.Logout(tokenString)
+			if err != nil {
+				c.JSON(http.StatusOK, response_models.Response{
+					ResponseCode: http.StatusBadRequest,
+					Message:      "Error logging out",
+				})
+				return
+			}
+
+			c.JSON(http.StatusOK, response_models.Response{
+				ResponseCode: http.StatusOK,
+				Message:      "Logged out successfully",
 			})
 		})
 	}

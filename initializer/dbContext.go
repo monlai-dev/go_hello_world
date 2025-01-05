@@ -1,10 +1,10 @@
 package initializer
 
 import (
-	"log"
-	"os"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"log"
+	"os"
 )
 
 var DB *gorm.DB
@@ -20,5 +20,3 @@ func ConnectDb() {
 		log.Fatal("Error connecting to database")
 	}
 }
-
-

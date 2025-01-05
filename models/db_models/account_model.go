@@ -14,5 +14,5 @@ type Account struct {
 	Email     string     `json:"email"`
 	Phone     string     `json:"phone"`
 	Role      string     `json:"role"`
-	Address   *Address   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"address"`
+	Address   Address    `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"address"`
 }

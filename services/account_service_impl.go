@@ -1,8 +1,10 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 	models "webapp/models/db_models"
 	"webapp/models/request_models"
@@ -12,12 +14,14 @@ import (
 type accountService struct {
 	db             *gorm.DB
 	addressService AddressServiceInterface
+	redisClient    *redis.Client
 }
 
-func NewAccountService(db *gorm.DB, addressService AddressServiceInterface) AccountServiceInterface {
+func NewAccountService(db *gorm.DB, addressService AddressServiceInterface, redisClient *redis.Client) AccountServiceInterface {
 	return &accountService{
 		db:             db,
 		addressService: addressService,
+		redisClient:    redisClient,
 	}
 
 }
@@ -36,6 +40,13 @@ func NewAccountService(db *gorm.DB, addressService AddressServiceInterface) Acco
 // @Router /account [post]
 func (service *accountService) CreateAccount(request request_models.RegisterRequest) (account models.Account, err error) {
 
+	tx := service.db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
 	hashedPassword, err := utils.HashPassword(request.Password)
 
 	if err != nil {
@@ -49,13 +60,11 @@ func (service *accountService) CreateAccount(request request_models.RegisterRequ
 		Phone:    request.Phone,
 	}
 
-	fmt.Println(account)
-
 	if err := service.db.Create(&account).Error; err != nil {
 		return account, err
 	}
 
-	return account, nil
+	return account, tx.Commit().Error
 }
 
 // DeleteAccount implements AccountService.
@@ -136,7 +145,7 @@ func (service *accountService) GetAccountByUserName(userName string) (models.Acc
 // GetAllAccounts implements AccountService.
 func (service *accountService) GetAllAccounts() ([]models.Account, error) {
 	var accounts []models.Account
-	result := service.db.Find(&accounts)
+	result := service.db.Preload("Address").Find(&accounts)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -200,7 +209,8 @@ func (service *accountService) GetRandomAccount() (models.Account, error) {
 
 func (service *accountService) GetAllHomelessAccounts() ([]models.Account, error) {
 	var accounts []models.Account
-	result := service.db.Where("").Find(&accounts)
+
+	result := service.db.Where("address_id IS NULL").Find(&accounts)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -222,7 +232,7 @@ func (service *accountService) UpdateAddress(email string, addressRequest reques
 	account, err := service.GetAccountByEmail(email)
 	if err != nil {
 		tx.Rollback()
-		return fmt.Errorf("failed to fetch account with email %d: %w", email, err)
+		return fmt.Errorf("failed to fetch account with email %s: %w", email, err)
 	}
 
 	// Create new address
@@ -233,12 +243,25 @@ func (service *accountService) UpdateAddress(email string, addressRequest reques
 	}
 
 	// Update account with new address
-	account.Address = &newAddress
+	account.Address = newAddress
+
 	if err := tx.Model(&account).Updates(&account).Error; err != nil {
 		tx.Rollback()
-		return fmt.Errorf("failed to update account with email %d: %w", email, err)
+		return fmt.Errorf("failed to update account with email %s: %w", email, err)
 	}
 
 	// Commit the transaction
 	return tx.Commit().Error
+}
+
+func (service *accountService) Logout(token string) error {
+
+	ctx := context.Background()
+	val := service.redisClient.LPush(ctx, "jwt_tokens", token)
+
+	if val.Err() != nil {
+		return val.Err()
+	}
+
+	return nil
 }
