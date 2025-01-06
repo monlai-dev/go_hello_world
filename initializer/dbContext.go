@@ -20,3 +20,19 @@ func ConnectDb() {
 		log.Fatal("Error connecting to database")
 	}
 }
+
+func Paginate(page int, pageSize int) func(db *gorm.DB) *gorm.DB {
+
+	if page <= 0 {
+		page = 1
+	}
+
+	if pageSize <= 0 {
+		pageSize = 5
+	}
+
+	return func(db *gorm.DB) *gorm.DB {
+		offset := (page - 1) * pageSize
+		return db.Offset(offset).Limit(pageSize)
+	}
+}

@@ -1,6 +1,8 @@
 package models
 
 import (
+	"errors"
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -16,4 +18,29 @@ type Account struct {
 	Role      string     `json:"role"`
 	AddressId *uint      `json:"address_id"`
 	Address   Address    `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"address"`
+}
+
+func (account *Account) BeforeCreate(tx *gorm.DB) (err error) {
+
+	if account.UserName == "" {
+		return errors.New("Username is required")
+	}
+
+	if account.Password == "" {
+		return errors.New("Password is required")
+	}
+
+	if account.Email == "" {
+		return errors.New("Email is required")
+	}
+
+	if account.Phone == "" {
+		return errors.New("Phone is required")
+	}
+
+	if account.Role == "" {
+		return errors.New("Role is required")
+	}
+
+	return nil
 }

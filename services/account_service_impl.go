@@ -2,27 +2,29 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 	"time"
 	models "webapp/models/db_models"
 	"webapp/models/request_models"
+	"webapp/repositories"
 	"webapp/utils"
 )
 
 type accountService struct {
-	db             *gorm.DB
-	addressService AddressServiceInterface
-	redisClient    *redis.Client
+	db                *gorm.DB
+	addressService    AddressServiceInterface
+	redisClient       *redis.Client
+	accountRepository repositories.AccountRepositoryInterface
 }
 
-func NewAccountService(db *gorm.DB, addressService AddressServiceInterface, redisClient *redis.Client) AccountServiceInterface {
+func NewAccountService(db *gorm.DB, addressService AddressServiceInterface, redisClient *redis.Client, accountRepository repositories.AccountRepositoryInterface) AccountServiceInterface {
 	return &accountService{
-		db:             db,
-		addressService: addressService,
-		redisClient:    redisClient,
+		db:                db,
+		addressService:    addressService,
+		redisClient:       redisClient,
+		accountRepository: accountRepository,
 	}
 
 }
@@ -61,7 +63,7 @@ func (service *accountService) CreateAccount(request request_models.RegisterRequ
 		Phone:    request.Phone,
 	}
 
-	if err := service.db.Omit("Address").Create(&account).Error; err != nil {
+	if err := tx.Omit("Address").Create(&account).Error; err != nil {
 		return account, err
 	}
 
@@ -91,8 +93,9 @@ func (service *accountService) DeleteAccount(id uint) error {
 func (service *accountService) GetAccountByEmail(email string) (models.Account, error) {
 
 	var account models.Account
+	account, err := service.accountRepository.FindAccountByEmail(email)
 
-	if err := service.db.Where("email = ?", email).First(&account).Error; err != nil {
+	if err != nil {
 		return models.Account{}, err
 	}
 
@@ -114,10 +117,11 @@ func (service *accountService) GetAccountById(id int) (models.Account, error) {
 // GetAccountByPhone implements AccountService.
 func (service *accountService) GetAccountByPhone(phone string) (models.Account, error) {
 	var account models.Account
-	result := service.db.Where("phone = ?", phone).First(&account)
 
-	if result.Error != nil {
-		return models.Account{}, result.Error
+	account, err := service.accountRepository.FindAccountByPhone(phone)
+
+	if err != nil {
+		return models.Account{}, err
 	}
 
 	return account, nil
@@ -134,43 +138,51 @@ func (service *accountService) GetAccountByPhone(phone string) (models.Account, 
 // @Router /account/{userName} [get]
 func (service *accountService) GetAccountByUserName(userName string) (models.Account, error) {
 	var account models.Account
-	result := service.db.Where("userName = ?", userName).Find(&account)
 
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return models.Account{}, result.Error
+	account, err := service.accountRepository.FindAccountByUserName(userName)
+
+	if err != nil {
+		return models.Account{}, err
 	}
 
 	return account, nil
 }
 
 // GetAllAccounts implements AccountService.
-func (service *accountService) GetAllAccounts() ([]models.Account, error) {
-	var accounts []models.Account
-	result := service.db.Preload("Address").Find(&accounts)
+func (service *accountService) GetAllAccounts(page int, pageSize int) ([]models.Account, error) {
 
-	if result.Error != nil {
-		return nil, result.Error
+	result, err := service.accountRepository.GetAllAccounts(page, pageSize)
+
+	if err != nil {
+		return nil, err
 	}
 
-	return accounts, nil
+	return result, nil
 }
 
 // UpdateAccount implements AccountService.
 func (service *accountService) UpdateAccount(id uint, userName string, password string, email string, phone string) error {
 	hashedPassword, err := utils.HashPassword(password)
+
 	if err != nil {
 		return err
 	}
 
-	result := service.db.Model(&models.Account{}).Where("id = ?", id).Updates(models.Account{
-		UserName: userName,
-		Password: hashedPassword,
-		Email:    email,
-		Phone:    phone,
-	})
+	account, err := service.accountRepository.FindAccountByEmail(email)
 
-	if result.Error != nil {
-		return result.Error
+	if err != nil {
+		return err
+	}
+
+	account.UserName = userName
+	account.Password = hashedPassword
+	account.Email = email
+	account.Phone = phone
+
+	result := service.accountRepository.UpdateAccount(account)
+
+	if result != nil {
+		return result
 	}
 
 	return nil

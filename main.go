@@ -10,6 +10,7 @@ import (
 	_ "webapp/docs"
 	"webapp/initializer"
 	"webapp/middleware"
+	"webapp/repositories"
 	"webapp/routes"
 	"webapp/services"
 )
@@ -43,7 +44,8 @@ func init() {
 func main() {
 
 	var addressService = services.NewAddressService(initializer.DB)
-	var accountService = services.NewAccountService(initializer.DB, addressService, initializer.RedisClient)
+	var accountRepository = repositories.NewAccountRepository(initializer.DB)
+	var accountService = services.NewAccountService(initializer.DB, addressService, initializer.RedisClient, accountRepository)
 
 	r := gin.Default()
 	r.Use(gin.Logger())

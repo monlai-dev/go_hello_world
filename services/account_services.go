@@ -14,7 +14,7 @@ type AccountServiceInterface interface {
 	GetAccountById(id int) (models.Account, error)
 	UpdateAccount(id uint, userName string, password string, email string, phone string) error
 	DeleteAccount(id uint) error
-	GetAllAccounts() ([]models.Account, error)
+	GetAllAccounts(page int, page_size int) ([]models.Account, error)
 	GetRandomAccount() (models.Account, error)
 	GetAllHomelessAccounts() ([]models.Account, error)
 	UpdateAddress(email string, address request_models.AddressRequest) error
