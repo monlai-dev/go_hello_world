@@ -4,7 +4,6 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/redis/go-redis/v9"
 	"github.com/swaggo/files"
 	"github.com/swaggo/gin-swagger"
 	"log"
@@ -17,8 +16,9 @@ import (
 
 func init() {
 	err := godotenv.Load()
-
 	initializer.ConnectDb()
+
+	initializer.ConnectRedis()
 
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -41,15 +41,9 @@ func init() {
 // @BasePath /
 
 func main() {
-	config := &redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	}
-	var conn = *redis.NewClient(config)
-	var addressService = services.NewAddressService(initializer.DB)
 
-	var accountService = services.NewAccountService(initializer.DB, addressService, &conn)
+	var addressService = services.NewAddressService(initializer.DB)
+	var accountService = services.NewAccountService(initializer.DB, addressService, initializer.RedisClient)
 
 	r := gin.Default()
 	r.Use(gin.Logger())
@@ -58,7 +52,7 @@ func main() {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	r.Use(middleware.CORSMiddleware())
-	routes.RegisterRoutes(r, accountService, &conn)
+	routes.RegisterRoutes(r, accountService, initializer.RedisClient)
 
 	err := r.Run()
 

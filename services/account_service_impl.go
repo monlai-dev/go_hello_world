@@ -61,7 +61,7 @@ func (service *accountService) CreateAccount(request request_models.RegisterRequ
 		Phone:    request.Phone,
 	}
 
-	if err := service.db.Create(&account).Error; err != nil {
+	if err := service.db.Omit("Address").Create(&account).Error; err != nil {
 		return account, err
 	}
 
@@ -211,7 +211,7 @@ func (service *accountService) GetRandomAccount() (models.Account, error) {
 func (service *accountService) GetAllHomelessAccounts() ([]models.Account, error) {
 	var accounts []models.Account
 
-	result := service.db.Where("address_id IS NULL").Find(&accounts)
+	result := service.db.Preload("Address").Where("address_id IS NULL").Find(&accounts)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -245,6 +245,7 @@ func (service *accountService) UpdateAddress(email string, addressRequest reques
 
 	// Update account with new address
 	account.Address = newAddress
+	account.AddressId = &newAddress.ID
 
 	if err := tx.Model(&account).Updates(&account).Error; err != nil {
 		tx.Rollback()
