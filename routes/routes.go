@@ -184,12 +184,15 @@ func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterfa
 		accountGroup.POST("/logout", func(c *gin.Context) {
 			authHeader := c.GetHeader("Authorization")
 			tokenString := authHeader[7:]
+
 			err := accountService.Logout(tokenString)
+
 			if err != nil {
 				c.JSON(http.StatusOK, response_models.Response{
 					ResponseCode: http.StatusBadRequest,
 					Message:      "Error logging out",
 				})
+
 				return
 			}
 

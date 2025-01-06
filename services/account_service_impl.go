@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+	"time"
 	models "webapp/models/db_models"
 	"webapp/models/request_models"
 	"webapp/utils"
@@ -257,7 +258,7 @@ func (service *accountService) UpdateAddress(email string, addressRequest reques
 func (service *accountService) Logout(token string) error {
 
 	ctx := context.Background()
-	val := service.redisClient.LPush(ctx, "jwt_tokens", token)
+	val := service.redisClient.Set(ctx, "logged_out"+token, "", time.Minute*15)
 
 	if val.Err() != nil {
 		return val.Err()

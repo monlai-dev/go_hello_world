@@ -12,6 +12,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	REDIS_TOKEN_PREFIX = "logged_out"
+)
+
 func JWTAuthMiddleware(redisClient *redis.Client) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
@@ -29,9 +33,9 @@ func JWTAuthMiddleware(redisClient *redis.Client) gin.HandlerFunc {
 		claims, err := utils.ValidateToken(tokenString)
 
 		ctx := context.Background()
-		isLoggedOut, err := IsJwtTokenLogout(ctx, redisClient, tokenString)
+		isLoggedOut, err2 := IsJwtTokenLogout(ctx, redisClient, tokenString)
 
-		if isLoggedOut {
+		if isLoggedOut || err2 != nil {
 			c.JSON(http.StatusOK, response_models.Response{
 				ResponseCode: http.StatusUnauthorized,
 				Message:      "Token is logged out",
@@ -39,7 +43,7 @@ func JWTAuthMiddleware(redisClient *redis.Client) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		
+
 		if err != nil {
 			c.JSON(http.StatusOK, response_models.Response{
 				ResponseCode: http.StatusUnauthorized,
@@ -51,7 +55,6 @@ func JWTAuthMiddleware(redisClient *redis.Client) gin.HandlerFunc {
 
 		// Pass user information to the next handler
 		c.Set("email", claims.Email)
-		c.Set("exp", claims.ExpiresAt)
 		c.Next()
 	}
 }
@@ -71,23 +74,24 @@ func CORSMiddleware() gin.HandlerFunc {
 
 func IsJwtTokenLogout(ctx context.Context, redisClient *redis.Client, token string) (bool, error) {
 
-	index, err := redisClient.LRange(ctx, "jwt_tokens", 0, -1).Result()
+	result, err := redisClient.Exists(ctx, REDIS_TOKEN_PREFIX+token).Result()
 
 	// Handle errors appropriately
 	if errors.Is(err, redis.Nil) {
-		// Token not found
+
 		return false, nil
+
 	} else if err != nil {
 		// Redis connection or query issue
 		return false, err
 	}
 
-	for _, t := range index {
-		if t == token {
-			return true, nil
-		}
+	// Token found
+	if result > 0 {
+		return true, nil
 	}
 
-	// Token found
+	// Token not found
 	return false, nil
+
 }
