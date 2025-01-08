@@ -6,10 +6,10 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 	"time"
-	models "webapp/models/db_models"
-	"webapp/models/request_models"
-	"webapp/repositories"
-	"webapp/utils"
+	"webapp/internal/models/db_models"
+	request_models2 "webapp/internal/models/request_models"
+	"webapp/internal/repositories"
+	utils2 "webapp/pkg/utils"
 )
 
 type accountService struct {
@@ -41,7 +41,7 @@ func NewAccountService(db *gorm.DB, addressService AddressServiceInterface, redi
 // @Param phone body string true "Phone"
 // @Success 200 {object} models.Account
 // @Router /account [post]
-func (service *accountService) CreateAccount(request request_models.RegisterRequest) (account models.Account, err error) {
+func (service *accountService) CreateAccount(request request_models2.RegisterRequest) (account models.Account, err error) {
 
 	tx := service.db.Begin()
 	defer func() {
@@ -50,7 +50,7 @@ func (service *accountService) CreateAccount(request request_models.RegisterRequ
 		}
 	}()
 
-	hashedPassword, err := utils.HashPassword(request.Password)
+	hashedPassword, err := utils2.HashPassword(request.Password)
 
 	if err != nil {
 		return account, err
@@ -162,7 +162,7 @@ func (service *accountService) GetAllAccounts(page int, pageSize int) ([]models.
 
 // UpdateAccount implements AccountService.
 func (service *accountService) UpdateAccount(id uint, userName string, password string, email string, phone string) error {
-	hashedPassword, err := utils.HashPassword(password)
+	hashedPassword, err := utils2.HashPassword(password)
 
 	if err != nil {
 		return err
@@ -188,7 +188,7 @@ func (service *accountService) UpdateAccount(id uint, userName string, password 
 	return nil
 }
 
-func (service *accountService) Login(request request_models.LoginRequest) (result string, err error) {
+func (service *accountService) Login(request request_models2.LoginRequest) (result string, err error) {
 
 	if request.Email == "" || request.Password == "" {
 		return "", nil
@@ -200,11 +200,11 @@ func (service *accountService) Login(request request_models.LoginRequest) (resul
 		return "", err
 	}
 
-	if err := utils.ComparePasswords(account.Password, request.Password); err != nil {
+	if err := utils2.ComparePasswords(account.Password, request.Password); err != nil {
 		return "", err
 	}
 
-	token, _ := utils.CreateToken(account.Email)
+	token, _ := utils2.CreateToken(account.Email)
 	return token, nil
 
 }
@@ -232,7 +232,7 @@ func (service *accountService) GetAllHomelessAccounts() ([]models.Account, error
 	return accounts, nil
 }
 
-func (service *accountService) UpdateAddress(email string, addressRequest request_models.AddressRequest) error {
+func (service *accountService) UpdateAddress(email string, addressRequest request_models2.AddressRequest) error {
 	// Start a transaction
 	tx := service.db.Begin()
 	defer func() {

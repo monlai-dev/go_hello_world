@@ -5,9 +5,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"net/http"
-	"webapp/controllers"
-	"webapp/middleware"
-	"webapp/services"
+	"webapp/internal/api/controllers"
+	"webapp/internal/api/middleware"
+	"webapp/internal/services"
 )
 
 // RegisterRoutes sets up the API routes

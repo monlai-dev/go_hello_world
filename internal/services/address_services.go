@@ -1,8 +1,8 @@
 package services
 
 import (
-	models "webapp/models/db_models"
-	"webapp/models/request_models"
+	"webapp/internal/models/db_models"
+	"webapp/internal/models/request_models"
 )
 
 type AddressServiceInterface interface {

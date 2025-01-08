@@ -1,13 +1,13 @@
 package services
 
 import (
-	models "webapp/models/db_models"
-	"webapp/models/request_models"
+	"webapp/internal/models/db_models"
+	request_models2 "webapp/internal/models/request_models"
 )
 
 type AccountServiceInterface interface {
-	Login(request_models.LoginRequest) (string, error)
-	CreateAccount(request request_models.RegisterRequest) (models.Account, error)
+	Login(request_models2.LoginRequest) (string, error)
+	CreateAccount(request request_models2.RegisterRequest) (models.Account, error)
 	GetAccountByEmail(email string) (models.Account, error)
 	GetAccountByUserName(userName string) (models.Account, error)
 	GetAccountByPhone(phone string) (models.Account, error)
@@ -17,6 +17,6 @@ type AccountServiceInterface interface {
 	GetAllAccounts(page int, page_size int) ([]models.Account, error)
 	GetRandomAccount() (models.Account, error)
 	GetAllHomelessAccounts() ([]models.Account, error)
-	UpdateAddress(email string, address request_models.AddressRequest) error
+	UpdateAddress(email string, address request_models2.AddressRequest) error
 	Logout(token string) error
 }

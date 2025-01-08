@@ -8,18 +8,19 @@ import (
 	"github.com/swaggo/gin-swagger"
 	"log"
 	_ "webapp/docs"
-	"webapp/initializer"
-	"webapp/middleware"
-	"webapp/repositories"
-	"webapp/routes"
-	"webapp/services"
+	"webapp/internal/api/middleware"
+	"webapp/internal/api/routes"
+	"webapp/internal/infrastructure/cache"
+	"webapp/internal/infrastructure/database"
+	"webapp/internal/repositories"
+	services2 "webapp/internal/services"
 )
 
 func init() {
 	err := godotenv.Load()
-	initializer.ConnectDb()
+	database.ConnectDb()
 
-	initializer.ConnectRedis()
+	cache.ConnectRedis()
 
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -43,9 +44,9 @@ func init() {
 
 func main() {
 
-	var addressService = services.NewAddressService(initializer.DB)
-	var accountRepository = repositories.NewAccountRepository(initializer.DB)
-	var accountService = services.NewAccountService(initializer.DB, addressService, initializer.RedisClient, accountRepository)
+	var addressService = services2.NewAddressService(database.DB)
+	var accountRepository = repositories.NewAccountRepository(database.DB)
+	var accountService = services2.NewAccountService(database.DB, addressService, cache.RedisClient, accountRepository)
 
 	r := gin.Default()
 	r.Use(gin.Logger())
@@ -54,7 +55,7 @@ func main() {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	r.Use(middleware.CORSMiddleware())
-	routes.RegisterRoutes(r, accountService, initializer.RedisClient)
+	routes.RegisterRoutes(r, accountService, cache.RedisClient)
 
 	err := r.Run()
 

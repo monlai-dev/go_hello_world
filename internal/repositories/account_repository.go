@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	accountModels "webapp/models/db_models"
+	accountModels "webapp/internal/models/db_models"
 )
 
 type AccountRepositoryInterface interface {

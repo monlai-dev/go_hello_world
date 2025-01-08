@@ -3,13 +3,12 @@ package middleware
 import (
 	"context"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"net/http"
 	"strings"
-	"webapp/models/response_models"
-	"webapp/utils"
-
-	"github.com/gin-gonic/gin"
+	"webapp/internal/models/response_models"
+	"webapp/pkg/utils"
 )
 
 const (

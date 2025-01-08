@@ -2,15 +2,15 @@ package repositories
 
 import (
 	"gorm.io/gorm"
-	"webapp/initializer"
-	"webapp/models/db_models"
+	"webapp/internal/infrastructure/database"
+	"webapp/internal/models/db_models"
 )
 
 type AccountRepository struct {
 	db *gorm.DB
 }
 
-func (a AccountRepository) FindAccountByEmail(email string) (models.Account, error) {
+func (a AccountRepository) FindAccountByEmail(email string) (models.models, error) {
 
 	var account models.Account
 	result := a.db.Where("email = ?", email).First(&account)
@@ -85,7 +85,7 @@ func (a AccountRepository) DeleteAccount(account models.Account) error {
 func (a AccountRepository) GetAllAccounts(page int, pageSize int) ([]models.Account, error) {
 
 	var accounts []models.Account
-	result := a.db.Scopes(initializer.Paginate(page, pageSize)).Find(&accounts).Find(&accounts)
+	result := a.db.Scopes(database.Paginate(page, pageSize)).Find(&accounts).Find(&accounts)
 
 	if result.Error != nil {
 		return nil, result.Error
