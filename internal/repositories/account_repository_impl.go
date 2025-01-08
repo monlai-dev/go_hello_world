@@ -47,8 +47,16 @@ func (a AccountRepository) FindAccountByPhone(phone string) (models.Account, err
 }
 
 func (a AccountRepository) FindAccountById(id int) (models.Account, error) {
-	//TODO implement me
-	panic("implement me")
+
+	var account models.Account
+	result := a.db.Where("id = ?", id).First(&account)
+
+	if result.Error != nil {
+		return models.Account{}, result.Error
+	}
+
+	return account, nil
+
 }
 
 func (a AccountRepository) CreateAccount(account models.Account) (models.Account, error) {
