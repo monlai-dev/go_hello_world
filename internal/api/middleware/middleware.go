@@ -54,6 +54,7 @@ func JWTAuthMiddleware(redisClient *redis.Client) gin.HandlerFunc {
 
 		// Pass user information to the next handler
 		c.Set("email", claims.Email)
+		c.Set("Role", claims.Role)
 		c.Next()
 	}
 }
@@ -93,4 +94,22 @@ func IsJwtTokenLogout(ctx context.Context, redisClient *redis.Client, token stri
 	// Token not found
 	return false, nil
 
+}
+
+func RoleMiddleware(requiredRole string) gin.HandlerFunc {
+
+	return func(c *gin.Context) {
+		role := c.GetString("Role")
+
+		if role != requiredRole {
+			c.JSON(http.StatusUnauthorized, response_models.Response{
+				ResponseCode: http.StatusUnauthorized,
+				Message:      "Unauthorized",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
 }

@@ -18,7 +18,7 @@ func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterfa
 
 	// Protected Routes
 	accountGroup := r.Group("/v1/account")
-	accountGroup.Use(middleware.JWTAuthMiddleware(redisClient))
+	accountGroup.Use(middleware.JWTAuthMiddleware(redisClient), middleware.RoleMiddleware("admin"))
 	{
 		accountGroup.GET("/list-all", controllers.ListAllAccountsHandler(accountService))
 		accountGroup.GET("/random", controllers.GetRandomAccountHandler(accountService))

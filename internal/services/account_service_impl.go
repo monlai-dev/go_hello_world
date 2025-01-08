@@ -205,7 +205,7 @@ func (service *accountService) Login(request request_models2.LoginRequest) (resu
 		return "", err
 	}
 
-	token, _ := utils2.CreateToken(account.Email)
+	token, _ := utils2.CreateToken(account.Email, account.Role)
 	return token, nil
 
 }
