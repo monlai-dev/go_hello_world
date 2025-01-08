@@ -61,6 +61,7 @@ func (service *accountService) CreateAccount(request request_models2.RegisterReq
 		Password: hashedPassword,
 		Email:    request.Email,
 		Phone:    request.Phone,
+		Role:     request.Role,
 	}
 
 	if err := tx.Omit("Address").Create(&account).Error; err != nil {

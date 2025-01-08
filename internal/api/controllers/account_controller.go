@@ -4,14 +4,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-	request_models2 "webapp/internal/models/request_models"
+	"webapp/internal/models/request_models"
 	"webapp/internal/models/response_models"
 	"webapp/internal/services"
 )
 
 func LoginHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var req request_models2.LoginRequest
+		var req request_models.LoginRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -29,7 +29,7 @@ func LoginHandler(accountService services.AccountServiceInterface) gin.HandlerFu
 
 func RegisterHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var req request_models2.RegisterRequest
+		var req request_models.RegisterRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -98,7 +98,7 @@ func GetHomelessAccountsHandler(accountService services.AccountServiceInterface)
 func UpdateAddressHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		email, _ := c.Get("email")
-		var address request_models2.AddressRequest
+		var address request_models.AddressRequest
 		if err := c.ShouldBindJSON(&address); err != nil {
 			c.JSON(http.StatusBadRequest, responseError("Invalid address"))
 			return

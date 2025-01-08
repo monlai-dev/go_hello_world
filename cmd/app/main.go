@@ -2,18 +2,11 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/swaggo/files"
-	"github.com/swaggo/gin-swagger"
 	"log"
 	_ "webapp/docs"
-	"webapp/internal/api/middleware"
-	"webapp/internal/api/routes"
 	"webapp/internal/infrastructure/cache"
 	"webapp/internal/infrastructure/database"
-	"webapp/internal/repositories"
-	services2 "webapp/internal/services"
 )
 
 func init() {
@@ -44,23 +37,32 @@ func init() {
 
 func main() {
 
-	var addressService = services2.NewAddressService(database.DB)
-	var accountRepository = repositories.NewAccountRepository(database.DB)
-	var accountService = services2.NewAccountService(database.DB, addressService, cache.RedisClient, accountRepository)
+	//var addressService = services2.NewAddressService(database.DB)
+	//var accountRepository = repositories.NewAccountRepository(database.DB)
+	//var accountService = services2.NewAccountService(database.DB, addressService, cache.RedisClient, accountRepository)
+	//
+	//r := gin.Default()
+	//r.Use(gin.Logger())
+	//r.Use(gin.Recovery())
+	//
+	//r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	//
+	//r.Use(middleware.CORSMiddleware())
+	//routes.RegisterRoutes(r, accountService, cache.RedisClient)
+	//
+	//err := r.Run()
+	//
+	//if err != nil {
+	//	return
+	//}
 
-	r := gin.Default()
-	r.Use(gin.Logger())
-	r.Use(gin.Recovery())
-
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
-	r.Use(middleware.CORSMiddleware())
-	routes.RegisterRoutes(r, accountService, cache.RedisClient)
-
-	err := r.Run()
-
+	r, err := InitializeApp()
 	if err != nil {
-		return
+		log.Fatalf("failed to initialize app: %v", err)
+	}
+
+	if err := r.Run(); err != nil {
+		log.Fatalf("failed to start server: %v", err)
 	}
 
 }

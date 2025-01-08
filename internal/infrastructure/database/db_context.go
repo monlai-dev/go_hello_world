@@ -9,7 +9,7 @@ import (
 
 var DB *gorm.DB
 
-func ConnectDb() {
+func ConnectDb() *gorm.DB {
 
 	var err error
 	dsn := os.Getenv("DATABASE_URL")
@@ -19,6 +19,8 @@ func ConnectDb() {
 	if err != nil {
 		log.Fatal("Error connecting to database")
 	}
+
+	return DB
 }
 
 func Paginate(page int, pageSize int) func(db *gorm.DB) *gorm.DB {

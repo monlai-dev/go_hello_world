@@ -8,7 +8,7 @@ import (
 var RedisClient *redis.Client
 var ctx = context.Background()
 
-func ConnectRedis() {
+func ConnectRedis() *redis.Client {
 	RedisClient = redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "",
@@ -18,4 +18,6 @@ func ConnectRedis() {
 	if _, err := RedisClient.Ping(ctx).Result(); err != nil {
 		panic(err)
 	}
+
+	return RedisClient
 }

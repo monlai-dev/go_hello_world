@@ -10,7 +10,7 @@ type AccountRepository struct {
 	db *gorm.DB
 }
 
-func (a AccountRepository) FindAccountByEmail(email string) (models.models, error) {
+func (a AccountRepository) FindAccountByEmail(email string) (models.Account, error) {
 
 	var account models.Account
 	result := a.db.Where("email = ?", email).First(&account)
