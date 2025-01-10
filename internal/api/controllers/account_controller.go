@@ -57,6 +57,7 @@ func ListAllAccountsHandler(accountService services.AccountServiceInterface) gin
 			c.JSON(http.StatusBadRequest, responseError("Error getting accounts"))
 			return
 		}
+
 		c.JSON(http.StatusOK, responseSuccess("Accounts retrieved successfully", []interface{}{accounts}))
 	}
 }

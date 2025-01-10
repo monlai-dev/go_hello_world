@@ -10,6 +10,10 @@ import (
 	"webapp/internal/services"
 )
 
+const (
+	ADMIN_ROLE = "admin"
+)
+
 // RegisterRoutes sets up the API routes
 func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterface, redisClient *redis.Client) {
 	// Public Routes
@@ -18,7 +22,7 @@ func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterfa
 
 	// Protected Routes
 	accountGroup := r.Group("/v1/account")
-	accountGroup.Use(middleware.JWTAuthMiddleware(redisClient), middleware.RoleMiddleware("admin"))
+	accountGroup.Use(middleware.JWTAuthMiddleware(redisClient), middleware.RoleMiddleware(ADMIN_ROLE))
 	{
 		accountGroup.GET("/list-all", controllers.ListAllAccountsHandler(accountService))
 		accountGroup.GET("/random", controllers.GetRandomAccountHandler(accountService))

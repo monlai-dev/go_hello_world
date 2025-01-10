@@ -50,8 +50,10 @@ func ProvideRouter(
 	r := gin.Default()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
+
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Use(middleware.CORSMiddleware())
+	r.Use(middleware.RateLimitMiddleware())
 	routes.RegisterRoutes(r, accountService, redisClient)
 	return r
 }

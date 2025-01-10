@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/time/rate"
 	"net/http"
 	"strings"
 	"webapp/internal/models/response_models"
@@ -14,6 +15,10 @@ import (
 const (
 	REDIS_TOKEN_PREFIX = "logged_out"
 )
+
+// limiting the number of requests per second
+// 15 requests per second with a burst of 20
+var limiter = rate.NewLimiter(15, 20)
 
 func JWTAuthMiddleware(redisClient *redis.Client) gin.HandlerFunc {
 
@@ -110,6 +115,20 @@ func RoleMiddleware(requiredRole string) gin.HandlerFunc {
 			return
 		}
 
+		c.Next()
+	}
+}
+
+func RateLimitMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !limiter.Allow() {
+			c.JSON(http.StatusTooManyRequests, response_models.Response{
+				ResponseCode: http.StatusTooManyRequests,
+				Message:      "Too many requests",
+			})
+			c.Abort()
+			return
+		}
 		c.Next()
 	}
 }
