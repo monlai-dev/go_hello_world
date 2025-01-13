@@ -15,7 +15,7 @@ func init() {
 }
 
 func main() {
-	err := database.DB.AutoMigrate(&models.Account{}, &models.Address{})
+	err := database.DB.AutoMigrate(&models.Account{}, &models.Address{}, &models.Theater{}, &models.Movie{}, &models.Room{}, &models.Slot{}, &models.Seat{}, &models.BookedSeat{}, &models.Booking{})
 
 	if err != nil {
 		return
