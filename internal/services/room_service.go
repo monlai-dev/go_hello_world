@@ -10,5 +10,5 @@ type RoomServiceInterface interface {
 	GetRoomByID(id int) (models.Room, error)
 	CreateRoom(room request_models.CreateRoomRequest) (models.Room, error)
 	UpdateRoom(room request_models.UpdateRoomRequest) error
-	DeleteRoom(room models.Room) error
+	DeleteRoom(roomId int) error
 }

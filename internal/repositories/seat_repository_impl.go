@@ -20,6 +20,19 @@ func NewSeatRepository(db *gorm.DB) SeatRepositoryInterface {
 	return &SeatRepository{db}
 }
 
+func (s SeatRepository) UpdateSeat(seat models.Seat) error {
+	tx := s.db.Begin()
+
+	result := s.db.Updates(&seat)
+
+	if result.Error != nil {
+		tx.Rollback()
+		return result.Error
+	}
+
+	return tx.Commit().Error
+}
+
 func (s SeatRepository) FindSeatById(id int) (models.Seat, error) {
 	var seat models.Seat
 	result := s.db.First(&seat, id)
@@ -30,12 +43,14 @@ func (s SeatRepository) FindSeatById(id int) (models.Seat, error) {
 }
 
 func (s SeatRepository) CreateListOfSeats(seats []models.Seat) ([]models.Seat, error) {
+	tx := s.db.Begin()
 
-	result := s.db.Create(&seats)
+	result := tx.Create(&seats)
 	if result.Error != nil {
+		tx.Rollback()
 		return []models.Seat{}, errors.New("Error when create list of seats " + result.Error.Error())
 	}
-	return seats, nil
+	return seats, tx.Commit().Error
 }
 
 func (s SeatRepository) GetAllSeatsByRoomID(page int, pageSize int, roomID int) ([]models.Seat, error) {

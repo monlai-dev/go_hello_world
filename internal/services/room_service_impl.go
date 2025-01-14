@@ -13,6 +13,13 @@ type RoomService struct {
 	roomRepository repositories.RoomRepositoryInterface
 }
 
+func NewRoomService(db *gorm.DB, roomRepository repositories.RoomRepositoryInterface) RoomServiceInterface {
+	return RoomService{
+		db:             db,
+		roomRepository: roomRepository,
+	}
+}
+
 func (r RoomService) FindAllRoomsByTheaterID(theaterId int, page int, pageSize int) ([]models.Room, error) {
 
 	rooms, err := r.roomRepository.FindAllRoomsByTheaterID(theaterId)
@@ -71,16 +78,22 @@ func (r RoomService) UpdateRoom(room request_models.UpdateRoomRequest) error {
 	return nil
 }
 
-func (r RoomService) DeleteRoom(room models.Room) error {
-	//TODO implement me
-	panic("implement me")
-}
+func (r RoomService) DeleteRoom(roomId int) error {
+	tx := r.db.Begin()
 
-func NewRoomService(db *gorm.DB, roomRepository repositories.RoomRepositoryInterface) RoomServiceInterface {
-	return RoomService{
-		db:             db,
-		roomRepository: roomRepository,
+	result, err := r.roomRepository.GetRoomByID(roomId)
+
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error getting room by id: %w", err)
 	}
+
+	if err := r.roomRepository.DeleteRoom(result); err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error deleting room: %w", err)
+	}
+
+	return tx.Commit().Error
 }
 
 func validateRoomData(room request_models.UpdateRoomRequest) error {
