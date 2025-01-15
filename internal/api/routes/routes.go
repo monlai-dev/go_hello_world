@@ -15,7 +15,7 @@ const (
 )
 
 // RegisterRoutes sets up the API routes
-func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterface, redisClient *redis.Client, roomService services.RoomServiceInterface, theaterService services.TheaterServiceInterface) {
+func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterface, redisClient *redis.Client, roomService services.RoomServiceInterface, theaterService services.TheaterServiceInterface, slotService services.SlotServiceInterface, movieService services.MovieServiceInterface) {
 	// Public Routes
 	r.POST("/login", controllers.LoginHandler(accountService))
 	r.POST("/register", controllers.RegisterHandler(accountService))
@@ -32,17 +32,30 @@ func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterfa
 		accountGroup.POST("/logout", controllers.LogoutHandler(accountService))
 	}
 
+	theaterGroup := r.Group("/v1/theater")
+	theaterGroup.Use(middleware.JWTAuthMiddleware(redisClient))
+	{
+		theaterGroup.POST("/create", controllers.CreateTheaterHandler(theaterService))
+		theaterGroup.GET("/list-all", controllers.GetAllTheatersHandler(theaterService))
+	}
+
 	roomGroup := r.Group("/v1/room")
 	roomGroup.Use(middleware.JWTAuthMiddleware(redisClient))
 	{
 		roomGroup.POST("/create", controllers.CreateRoomHandler(roomService))
 	}
 
-	theaterGroup := r.Group("/v1/theater")
-	theaterGroup.Use(middleware.JWTAuthMiddleware(redisClient))
+	slotGroup := r.Group("/v1/slot")
+	slotGroup.Use(middleware.JWTAuthMiddleware(redisClient))
 	{
-		theaterGroup.POST("/create", controllers.CreateTheaterHandler(theaterService))
-		theaterGroup.GET("/list-all", controllers.GetAllTheatersHandler(theaterService))
+		slotGroup.POST("/create", controllers.CreateSlotHandler(slotService))
+		slotGroup.GET("/list-all/:movieId", controllers.GetAllSlotsByMovieIdHandler(slotService))
+	}
+
+	movieGroup := r.Group("/v1/movie")
+	movieGroup.Use(middleware.JWTAuthMiddleware(redisClient))
+	{
+		movieGroup.POST("/create", controllers.CreateMovieHandler(movieService))
 	}
 
 	// Health Check

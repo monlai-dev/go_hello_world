@@ -37,10 +37,20 @@ func InitializeApp() (*gin.Engine, error) {
 	accountRepositoryInterface := repositories.NewAccountRepository(db)
 	accountServiceInterface := services.NewAccountService(db, addressServiceInterface, client, accountRepositoryInterface)
 
-	engine := ProvideRouter(accountServiceInterface, client, roomServiceInterface, theaterServiceInterface)
+	movieRepository := repositories.NewMovieRepository(db)
+	movieServiceInterface := services.NewMovieService(movieRepository)
+
+	slotRepository := repositories.NewSlotRepository(db)
+	slotServiceInterface := services.NewSlotService(slotRepository, roomServiceInterface, movieServiceInterface)
+
+	engine := ProvideRouter(accountServiceInterface,
+		client,
+		roomServiceInterface,
+		theaterServiceInterface,
+		slotServiceInterface,
+		movieServiceInterface)
 	return engine, nil
 }
-
 
 // ProvideRouter wires all middleware and routes
 func ProvideRouter(
@@ -48,6 +58,8 @@ func ProvideRouter(
 	redisClient *redis.Client,
 	roomServiceInterface services.RoomServiceInterface,
 	theaterServiceInterface services.TheaterServiceInterface,
+	slotServiceInterface services.SlotServiceInterface,
+	movieService services.MovieServiceInterface,
 ) *gin.Engine {
 	r := gin.Default()
 	r.Use(gin.Logger())
@@ -56,6 +68,6 @@ func ProvideRouter(
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Use(middleware.CORSMiddleware())
 	r.Use(middleware.RateLimitMiddleware())
-	routes.RegisterRoutes(r, accountService, redisClient, roomServiceInterface, theaterServiceInterface)
+	routes.RegisterRoutes(r, accountService, redisClient, roomServiceInterface, theaterServiceInterface, slotServiceInterface, movieService)
 	return r
 }

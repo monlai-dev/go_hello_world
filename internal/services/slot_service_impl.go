@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 	models "webapp/internal/models/db_models"
 	"webapp/internal/models/request_models"
 	"webapp/internal/repositories"
@@ -10,11 +11,15 @@ import (
 
 type SlotService struct {
 	slotRepository repositories.SlotRepositoryInterface
+	roomService    RoomServiceInterface
+	movieService   MovieServiceInterface
 }
 
-func NewSlotService(slotRepository repositories.SlotRepositoryInterface) SlotServiceInterface {
+func NewSlotService(slotRepository repositories.SlotRepositoryInterface, roomService RoomServiceInterface, movieService MovieServiceInterface) SlotServiceInterface {
 	return &SlotService{
 		slotRepository: slotRepository,
+		roomService:    roomService,
+		movieService:   movieService,
 	}
 }
 
@@ -52,23 +57,34 @@ func (s SlotService) FindAllSlotByMovieIDAndBetweenDates(movieId int, startDate 
 }
 
 func (s SlotService) CreateSlot(createSlotRequest request_models.CreateSlotRequest) (models.Slot, error) {
-	slots, err := s.GetSlotByRoomIDAndTime(int(createSlotRequest.RoomID), createSlotRequest.StartTime, createSlotRequest.EndTime)
+	slots, _ := s.GetSlotByRoomIDAndTime(int(createSlotRequest.RoomID), createSlotRequest.StartTime, createSlotRequest.EndTime)
+
+	// Validate room existence
+	room, err := s.roomService.GetRoomByID(int(createSlotRequest.RoomID))
 	if err != nil {
-		return models.Slot{}, fmt.Errorf("error fetching slots: %w", err)
+		return models.Slot{}, fmt.Errorf("error fetching room: %w", err)
 	}
 
+	// Validate movie existence
+	movie, err := s.movieService.GetMovieByID(int(createSlotRequest.MovieID))
+	if err != nil {
+		return models.Slot{}, fmt.Errorf("error fetching movie: %w", err)
+	}
+
+	// Validate slot availability
 	available, err := isRequestTimeAvailable(createSlotRequest.StartTime, createSlotRequest.EndTime, slots)
 	if err != nil {
 		return models.Slot{}, err
 	}
 
+	// If slot is not available, return error
 	if !available {
 		return models.Slot{}, fmt.Errorf("slot is not available")
 	}
 
 	slotModel := models.Slot{
-		RoomID:    createSlotRequest.RoomID,
-		MovieID:   createSlotRequest.MovieID,
+		RoomID:    room.ID,
+		MovieID:   movie.ID,
 		StartTime: createSlotRequest.StartTime,
 		EndTime:   createSlotRequest.EndTime,
 	}
@@ -115,9 +131,13 @@ func (s SlotService) FindAllSlotBetweenDates(startDate pgtype.Timestamp, endDate
 func isRequestTimeAvailable(startTime pgtype.Timestamp, endTime pgtype.Timestamp, slots []models.Slot) (bool, error) {
 
 	for _, slot := range slots {
-		if (startTime.Time.After(slot.StartTime.Time) && startTime.Time.Before(slot.EndTime.Time)) || (endTime.Time.After(slot.StartTime.Time) && endTime.Time.Before(slot.EndTime.Time)) {
+		if startTime.Time.Before(slot.EndTime.Time) && endTime.Time.After(slot.StartTime.Time) {
 			return false, fmt.Errorf("slot is not available")
 		}
+	}
+
+	if startTime.Time.Before(time.Now()) || endTime.Time.Before(time.Now()) {
+		return false, fmt.Errorf("start time is in the past or end time is in the past or both")
 	}
 
 	return true, nil

@@ -54,6 +54,7 @@ func (r RoomService) CreateRoom(room request_models.CreateRoomRequest) (models.R
 	roomModel := models.Room{
 		Name:      room.Name,
 		TheaterID: theater.ID,
+		Capacity:  room.Capacity,
 	}
 
 	roomCreated, err := r.roomRepository.CreateRoom(roomModel)
