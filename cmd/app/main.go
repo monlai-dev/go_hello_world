@@ -4,7 +4,6 @@ package main
 import (
 	"github.com/joho/godotenv"
 	"log"
-	_ "webapp/docs"
 	"webapp/internal/infrastructure/cache"
 	"webapp/internal/infrastructure/database"
 )

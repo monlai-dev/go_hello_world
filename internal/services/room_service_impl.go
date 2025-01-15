@@ -11,12 +11,14 @@ import (
 type RoomService struct {
 	db             *gorm.DB
 	roomRepository repositories.RoomRepositoryInterface
+	theaterService TheaterServiceInterface
 }
 
-func NewRoomService(db *gorm.DB, roomRepository repositories.RoomRepositoryInterface) RoomServiceInterface {
+func NewRoomService(db *gorm.DB, roomRepository repositories.RoomRepositoryInterface, theaterService TheaterServiceInterface) RoomServiceInterface {
 	return RoomService{
 		db:             db,
 		roomRepository: roomRepository,
+		theaterService: theaterService,
 	}
 }
 
@@ -44,13 +46,17 @@ func (r RoomService) GetRoomByID(id int) (models.Room, error) {
 
 func (r RoomService) CreateRoom(room request_models.CreateRoomRequest) (models.Room, error) {
 
+	theater, err := r.theaterService.GetTheaterById(int(room.TheaterID))
+	if err != nil {
+		return models.Room{}, fmt.Errorf("error fetching theater: %v", err)
+	}
+
 	roomModel := models.Room{
 		Name:      room.Name,
-		TheaterID: room.TheaterID,
+		TheaterID: theater.ID,
 	}
 
 	roomCreated, err := r.roomRepository.CreateRoom(roomModel)
-
 	if err != nil {
 		return models.Room{}, err
 	}

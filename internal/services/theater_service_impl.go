@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 	models "webapp/internal/models/db_models"
+	"webapp/internal/models/request_models"
 	"webapp/internal/repositories"
 )
 
@@ -46,16 +47,21 @@ func (t TheaterService) GetTheaterById(id int) (models.Theater, error) {
 	return theater, nil
 }
 
-func (t TheaterService) CreateTheater(theater models.Theater) (models.Theater, error) {
+func (t TheaterService) CreateTheater(theater request_models.TheaterRequest) (models.Theater, error) {
 
-	theater, err := t.theaterRepo.CreateTheater(theater)
+	theaterModel := models.Theater{
+		Name:    theater.Name,
+		Address: theater.Address,
+	}
+
+	theaterCreated, err := t.theaterRepo.CreateTheater(theaterModel)
 
 	if err != nil {
 		log.Printf("error creating theater: %v", err)
 		return models.Theater{}, errors.New("error creating theater")
 	}
 
-	return theater, nil
+	return theaterCreated, nil
 }
 
 func (t TheaterService) UpdateTheater(theater models.Theater) error {

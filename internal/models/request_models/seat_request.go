@@ -9,3 +9,11 @@ type UpdateSeatRequest struct {
 	RoomID uint   `json:"room_id"`
 	Name   string `json:"name"`
 }
+
+func (r *CreateSeatRequest) Validate() error {
+	return validate.Struct(r)
+}
+
+func (r *UpdateSeatRequest) Validate() error {
+	return validate.Struct(r)
+}

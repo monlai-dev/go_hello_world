@@ -15,7 +15,7 @@ const (
 )
 
 // RegisterRoutes sets up the API routes
-func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterface, redisClient *redis.Client) {
+func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterface, redisClient *redis.Client, roomService services.RoomServiceInterface, theaterService services.TheaterServiceInterface) {
 	// Public Routes
 	r.POST("/login", controllers.LoginHandler(accountService))
 	r.POST("/register", controllers.RegisterHandler(accountService))
@@ -30,6 +30,19 @@ func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterfa
 		accountGroup.GET("/no-home", controllers.GetHomelessAccountsHandler(accountService))
 		accountGroup.PUT("/update-address", controllers.UpdateAddressHandler(accountService))
 		accountGroup.POST("/logout", controllers.LogoutHandler(accountService))
+	}
+
+	roomGroup := r.Group("/v1/room")
+	roomGroup.Use(middleware.JWTAuthMiddleware(redisClient))
+	{
+		roomGroup.POST("/create", controllers.CreateRoomHandler(roomService))
+	}
+
+	theaterGroup := r.Group("/v1/theater")
+	theaterGroup.Use(middleware.JWTAuthMiddleware(redisClient))
+	{
+		theaterGroup.POST("/create", controllers.CreateTheaterHandler(theaterService))
+		theaterGroup.GET("/list-all", controllers.GetAllTheatersHandler(theaterService))
 	}
 
 	// Health Check

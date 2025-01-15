@@ -11,7 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/swaggo/files"
 	"github.com/swaggo/gin-swagger"
-	"gorm.io/gorm"
+	_ "gorm.io/gorm"
 	"webapp/internal/api/middleware"
 	"webapp/internal/api/routes"
 	"webapp/internal/infrastructure/cache"
@@ -20,32 +20,34 @@ import (
 	"webapp/internal/services"
 )
 
-import (
-	_ "webapp/docs"
-)
-
 // Injectors from wire.go:
 
 func InitializeApp() (*gin.Engine, error) {
 	db := database.ConnectDb()
-	addressServiceInterface := services.NewAddressService(db)
 	client := cache.ConnectRedis()
+
+	addressServiceInterface := services.NewAddressService(db)
+
+	theaterReposiroty := repositories.NewTheaterRepository(db)
+	theaterServiceInterface := services.NewTheaterService(theaterReposiroty, db)
+
+	roomRepositoy := repositories.NewRoomRepository(db)
+	roomServiceInterface := services.NewRoomService(db, roomRepositoy, theaterServiceInterface)
+
 	accountRepositoryInterface := repositories.NewAccountRepository(db)
 	accountServiceInterface := services.NewAccountService(db, addressServiceInterface, client, accountRepositoryInterface)
-	engine := ProvideRouter(accountServiceInterface, client)
+
+	engine := ProvideRouter(accountServiceInterface, client, roomServiceInterface, theaterServiceInterface)
 	return engine, nil
 }
 
-// wire.go:
-
-func ProvideAddressService(db *gorm.DB) services.AddressServiceInterface {
-	return services.NewAddressService(db)
-}
 
 // ProvideRouter wires all middleware and routes
 func ProvideRouter(
 	accountService services.AccountServiceInterface,
 	redisClient *redis.Client,
+	roomServiceInterface services.RoomServiceInterface,
+	theaterServiceInterface services.TheaterServiceInterface,
 ) *gin.Engine {
 	r := gin.Default()
 	r.Use(gin.Logger())
@@ -54,6 +56,6 @@ func ProvideRouter(
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Use(middleware.CORSMiddleware())
 	r.Use(middleware.RateLimitMiddleware())
-	routes.RegisterRoutes(r, accountService, redisClient)
+	routes.RegisterRoutes(r, accountService, redisClient, roomServiceInterface, theaterServiceInterface)
 	return r
 }
