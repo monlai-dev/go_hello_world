@@ -9,3 +9,12 @@ type CreateSlotRequest struct {
 	StartTime pgtype.Timestamp `json:"start_time"`
 	EndTime   pgtype.Timestamp `json:"end_time"`
 }
+
+type UpdateSlotRequest struct {
+	SlotID    uint             `json:"slot_id"`
+	StartTime pgtype.Timestamp `json:"start_time"`
+	EndTime   pgtype.Timestamp `json:"end_time"`
+	Price     float64          `json:"price"`
+	RoomID    uint             `json:"room_id"`
+	MovieID   uint             `json:"movie_id"`
+}

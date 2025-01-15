@@ -5,3 +5,10 @@ type CreateRoomRequest struct {
 	Capacity  int    `json:"capacity,required"`
 	TheaterID uint   `json:"theater_id,required"`
 }
+
+type UpdateRoomRequest struct {
+	RoomID    uint   `json:"room_id"`
+	Name      string `json:"name"`
+	Capacity  int    `json:"capacity"`
+	TheaterID uint   `json:"theater_id"`
+}

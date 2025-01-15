@@ -11,6 +11,10 @@ type BookedRepository struct {
 	db *gorm.DB
 }
 
+func NewBookedRepository(db *gorm.DB) BookedSeatRepositoryInterface {
+	return &BookedRepository{db: db}
+}
+
 func (b BookedRepository) GetAllBooked(page int, pageSize int) ([]models.BookedSeat, error) {
 
 	var booked []models.BookedSeat
@@ -36,15 +40,16 @@ func (b BookedRepository) GetBookedById(id int) (models.BookedSeat, error) {
 	return booked, nil
 }
 
-func (b BookedRepository) CreateBooked(booked models.BookedSeat) ([]models.BookedSeat, error) {
+func (b BookedRepository) CreateBooked(booked []models.BookedSeat) ([]models.BookedSeat, error) {
 
 	tx := b.db.Begin()
 
 	if err := tx.Create(&booked).Error; err != nil {
+		tx.Rollback()
 		return nil, fmt.Errorf("error creating booked seat: %w", err)
 	}
 
-	return []models.BookedSeat{booked}, tx.Commit().Error
+	return booked, tx.Commit().Error
 }
 
 func (b BookedRepository) UpdateBooked(booked []models.BookedSeat) error {
@@ -103,6 +108,32 @@ func (b BookedRepository) GetBookedSeatBySlotIdAndStatus(slotId int, status []st
 	return booked, nil
 }
 
-func NewBookedRepository(db *gorm.DB) BookedSeatRepositoryInterface {
-	return &BookedRepository{db: db}
+func (b BookedRepository) FindAllBookedSeatWithIds(ids []int) ([]models.BookedSeat, error) {
+
+	var booked []models.BookedSeat
+
+	if err := b.db.Where("id IN ?", ids).Find(&booked).Error; err != nil {
+		return nil, fmt.Errorf("error fetching booked seats: %w", err)
+	}
+
+	if len(booked) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	return booked, nil
+}
+
+func (b BookedRepository) GetAllBookedSeatByBookingId(bookingId int) ([]models.BookedSeat, error) {
+
+	var booked []models.BookedSeat
+
+	if err := b.db.Where("booking_id = ?", bookingId).Find(&booked).Error; err != nil {
+		return nil, fmt.Errorf("error fetching booked seats: %w", err)
+	}
+
+	if len(booked) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	return booked, nil
 }

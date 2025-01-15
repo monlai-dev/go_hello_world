@@ -14,4 +14,6 @@ type SlotRepositoryInterface interface {
 	GetSlotsByMovieId(movieId int) ([]models.Slot, error)
 	GetSlotsInDateRange(startDate pgtype.Timestamp, endDate pgtype.Timestamp) ([]models.Slot, error)
 	GetSlotsByRoomId(roomId int) ([]models.Slot, error)
+	GetSlotByMovieIdAndBetweenDates(movieId int, startDate pgtype.Timestamp, endDate pgtype.Timestamp) ([]models.Slot, error)
+	GetSlotByRoomIdAndBetweenDates(roomId int, startDate pgtype.Timestamp, endDate pgtype.Timestamp) ([]models.Slot, error)
 }

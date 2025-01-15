@@ -72,3 +72,33 @@ func (b BookingRepository) DeleteBooking(booking models.Booking) error {
 
 	return tx.Commit().Error
 }
+
+func (b BookingRepository) GetAllBookingsByAccountID(accountID int, page int, pageSize int) ([]models.Booking, error) {
+
+	var bookings []models.Booking
+
+	if err := b.db.Scopes(database.Paginate(page, pageSize)).Where("account_id = ?", accountID).Find(&bookings).Error; err != nil {
+		return nil, fmt.Errorf("error fetching bookings: %w", err)
+	}
+
+	if len(bookings) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	return bookings, nil
+}
+
+func (b BookingRepository) GetAllBookingsBySlotID(slotID int, page int, pageSize int) ([]models.Booking, error) {
+
+	var bookings []models.Booking
+
+	if err := b.db.Scopes(database.Paginate(page, pageSize)).Where("slot_id = ?", slotID).Find(&bookings).Error; err != nil {
+		return nil, fmt.Errorf("error fetching bookings: %w", err)
+	}
+
+	if len(bookings) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	return bookings, nil
+}

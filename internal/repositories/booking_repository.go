@@ -8,4 +8,6 @@ type BookingRepositoryInterface interface {
 	CreateBooking(booking models.Booking) (models.Booking, error)
 	UpdateBooking(booking models.Booking) error
 	DeleteBooking(booking models.Booking) error
+	GetAllBookingsByAccountID(accountID int, page int, pageSize int) ([]models.Booking, error)
+	GetAllBookingsBySlotID(slotID int, page int, pageSize int) ([]models.Booking, error)
 }

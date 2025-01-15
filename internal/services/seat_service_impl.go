@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"log"
 	models "webapp/internal/models/db_models"
 	"webapp/internal/models/request_models"
@@ -10,14 +9,12 @@ import (
 )
 
 type SeatService struct {
-	db             *gorm.DB
 	seatRepository repositories.SeatRepositoryInterface
 	roomService    RoomServiceInterface
 }
 
-func NewSeatService(db *gorm.DB, seatRepository repositories.SeatRepository, roomService RoomServiceInterface) SeatServiceInterface {
+func NewSeatService(seatRepository repositories.SeatRepository, roomService RoomServiceInterface) SeatServiceInterface {
 	return &SeatService{
-		db:             db,
 		seatRepository: seatRepository,
 		roomService:    roomService,
 	}

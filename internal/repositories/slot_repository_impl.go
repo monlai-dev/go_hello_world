@@ -124,3 +124,33 @@ func (s SlotRepository) GetSlotsByRoomId(roomId int) ([]models.Slot, error) {
 
 	return slots, nil
 }
+
+func (s SlotRepository) GetSlotByMovieIdAndBetweenDates(movieId int, startDate pgtype.Timestamp, endDate pgtype.Timestamp) ([]models.Slot, error) {
+
+	var slots []models.Slot
+
+	if err := s.db.Where("movie_id = ? AND start_time >= ? AND end_time <= ?", movieId, startDate, endDate).Find(&slots).Error; err != nil {
+		return nil, fmt.Errorf(ERROR_MESSAGE, err)
+	}
+
+	if len(slots) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	return slots, nil
+}
+
+func (s SlotRepository) GetSlotByRoomIdAndBetweenDates(roomId int, startDate pgtype.Timestamp, endDate pgtype.Timestamp) ([]models.Slot, error) {
+
+	var slots []models.Slot
+
+	if err := s.db.Where("room_id = ? AND start_time >= ? AND end_time <= ?", roomId, startDate, endDate).Find(&slots).Error; err != nil {
+		return nil, fmt.Errorf(ERROR_MESSAGE, err)
+	}
+
+	if len(slots) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	return slots, nil
+}
