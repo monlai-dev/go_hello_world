@@ -12,4 +12,5 @@ type SeatServiceInterface interface {
 	UpdateSeatByID(seatID int, request request_models.UpdateSeatRequest) error
 	DisableAndEnableSeat(seatID int) error
 	AutoImportSeatWithRow(roomID int, row int) ([]models.Seat, error)
+	GetSeatByIdList(id []int) ([]models.Seat, error)
 }

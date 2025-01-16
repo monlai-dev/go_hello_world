@@ -2,7 +2,9 @@ package repositories
 
 import (
 	"errors"
+	"fmt"
 	"gorm.io/gorm"
+	"log"
 	"webapp/internal/infrastructure/database"
 	models "webapp/internal/models/db_models"
 )
@@ -74,6 +76,16 @@ func (s SeatRepository) GetAllSeatsBySlotID(page int, pageSize int, slotID int) 
 	var seats []models.Seat
 	if err := s.db.Scopes(database.Paginate(page, pageSize)).Where("room_id = ?", slot.RoomID).Find(&seats).Error; err != nil {
 		return nil, err
+	}
+	return seats, nil
+}
+
+func (s SeatRepository) FindAllSeatsWithIds(ids []int) ([]models.Seat, error) {
+
+	var seats []models.Seat
+	if err := s.db.Where("id IN (?)", ids).Find(&seats).Error; err != nil {
+		log.Printf("error fetching seats: %v", err)
+		return nil, fmt.Errorf("error when fetching seats")
 	}
 	return seats, nil
 }

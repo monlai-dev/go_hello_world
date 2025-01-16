@@ -8,4 +8,5 @@ type SeatRepositoryInterface interface {
 	GetAllSeatsByRoomID(page int, pageSize int, roomID int) ([]models.Seat, error)
 	GetAllSeatsBySlotID(page int, pageSize int, slotID int) ([]models.Seat, error)
 	UpdateSeat(seat models.Seat) error
+	FindAllSeatsWithIds(ids []int) ([]models.Seat, error)
 }

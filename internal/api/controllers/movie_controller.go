@@ -57,3 +57,32 @@ func DeleteMovieHandler(movieService services.MovieServiceInterface) gin.Handler
 		c.JSON(http.StatusOK, responseSuccess("Movie deleted successfully", nil))
 	}
 }
+
+func GetMovieByIDHandler(movieService services.MovieServiceInterface) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		movieID, _ := strconv.Atoi(c.Param("id"))
+
+		movie, err := movieService.GetMovieByID(movieID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, responseError(err.Error()))
+			return
+		}
+
+		c.JSON(http.StatusOK, responseSuccess("Movie retrieved successfully", []interface{}{movie}))
+	}
+}
+
+func GetAllMoviesHandler(movieService services.MovieServiceInterface) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		page, _ := strconv.Atoi(c.Query("page"))
+		pageSize, _ := strconv.Atoi(c.Query("page_size"))
+
+		movies, err := movieService.GetAllMovies(page, pageSize)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, responseError(err.Error()))
+			return
+		}
+
+		c.JSON(http.StatusOK, responseSuccess("Movies retrieved successfully", []interface{}{movies}))
+	}
+}

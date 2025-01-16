@@ -1,8 +1,13 @@
 package services
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"github.com/goccy/go-json"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/redis/go-redis/v9"
+	"log"
 	"time"
 	models "webapp/internal/models/db_models"
 	"webapp/internal/models/request_models"
@@ -13,13 +18,18 @@ type SlotService struct {
 	slotRepository repositories.SlotRepositoryInterface
 	roomService    RoomServiceInterface
 	movieService   MovieServiceInterface
+	redisClient    *redis.Client
 }
 
-func NewSlotService(slotRepository repositories.SlotRepositoryInterface, roomService RoomServiceInterface, movieService MovieServiceInterface) SlotServiceInterface {
+func NewSlotService(slotRepository repositories.SlotRepositoryInterface,
+	roomService RoomServiceInterface,
+	movieService MovieServiceInterface,
+	redisClient *redis.Client) SlotServiceInterface {
 	return &SlotService{
 		slotRepository: slotRepository,
 		roomService:    roomService,
 		movieService:   movieService,
+		redisClient:    redisClient,
 	}
 }
 
@@ -36,10 +46,23 @@ func (s SlotService) FindAllSlotsByRoomID(roomId int, page int, pageSize int) ([
 
 func (s SlotService) FindAllSlotByMovieID(movieId int, page int, pageSize int) ([]models.Slot, error) {
 
-	slots, err := s.slotRepository.GetSlotsByMovieId(movieId)
+	slots, err := getFromCache(context.Background(), movieId, *s.redisClient)
 
-	if err != nil {
-		return nil, fmt.Errorf("error fetching slots: %w", err)
+	if err == nil {
+		return slots, nil
+	}
+	if errors.Is(err, redis.Nil) {
+		log.Printf("Slot not found in cache, fetching from database")
+	}
+
+	slots, dbErr := s.slotRepository.GetSlotsByMovieId(movieId)
+
+	if dbErr != nil {
+		return nil, fmt.Errorf("error fetching slots: %w", dbErr)
+	}
+
+	if err := setToCache(context.Background(), movieId, slots, *s.redisClient); err != nil {
+		log.Printf("Failed to set slot to cache: %v", err)
 	}
 
 	return slots, nil
@@ -108,8 +131,15 @@ func (s SlotService) DeleteSlot(slotId int) error {
 }
 
 func (s SlotService) GetSlotByID(slotId int) (models.Slot, error) {
-	//TODO implement me
-	panic("implement me")
+
+	slot, err := s.slotRepository.GetSlotById(slotId)
+
+	if err != nil {
+		log.Printf("error fetching slot with ID %d: %v", slotId, err)
+		return models.Slot{}, fmt.Errorf("slot with id %d not found", slotId)
+	}
+
+	return slot, nil
 }
 
 func (s SlotService) GetSlotByRoomIDAndTime(roomId int, startTime pgtype.Timestamp, endTime pgtype.Timestamp) ([]models.Slot, error) {
@@ -141,4 +171,39 @@ func isRequestTimeAvailable(startTime pgtype.Timestamp, endTime pgtype.Timestamp
 	}
 
 	return true, nil
+}
+
+func getFromCache(ctx context.Context, movieId int, client redis.Client) ([]models.Slot, error) {
+	redisKey := fmt.Sprintf("slot:movie:%d", movieId)
+	slots, err := client.Get(ctx, redisKey).Result()
+
+	if err != nil {
+		log.Printf("Failed to get slot from cache: %v", err)
+		return nil, err
+	}
+
+	var slot []models.Slot
+	if err := json.Unmarshal([]byte(slots), &slot); err != nil {
+		log.Printf("Failed to unmarshal slot from cache: %v", err)
+		return nil, err
+	}
+
+	return slot, nil
+}
+
+func setToCache(ctx context.Context, movieId int, slots []models.Slot, client redis.Client) error {
+	redisKey := fmt.Sprintf("slot:movie:%d", movieId)
+
+	slotsJSON, err := json.Marshal(slots)
+	if err != nil {
+		log.Printf("Failed to marshal slot: %v", err)
+		return err
+	}
+
+	if err := client.Set(ctx, redisKey, slotsJSON, time.Hour).Err(); err != nil {
+		log.Printf("Failed to set slot to cache: %v", err)
+		return err
+	}
+
+	return nil
 }

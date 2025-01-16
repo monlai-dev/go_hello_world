@@ -13,11 +13,22 @@ type SeatService struct {
 	roomService    RoomServiceInterface
 }
 
-func NewSeatService(seatRepository repositories.SeatRepository, roomService RoomServiceInterface) SeatServiceInterface {
+func NewSeatService(seatRepository repositories.SeatRepositoryInterface, roomService RoomServiceInterface) SeatServiceInterface {
 	return &SeatService{
 		seatRepository: seatRepository,
 		roomService:    roomService,
 	}
+}
+
+func (s SeatService) GetSeatByIdList(id []int) ([]models.Seat, error) {
+
+	seat, err := s.seatRepository.FindAllSeatsWithIds(id)
+
+	if err != nil {
+		return nil, fmt.Errorf("error fetching seat: %v", err)
+	}
+
+	return seat, nil
 }
 
 func (s SeatService) GetSeatByID(id int) (models.Seat, error) {

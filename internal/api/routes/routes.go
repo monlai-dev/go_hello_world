@@ -15,7 +15,15 @@ const (
 )
 
 // RegisterRoutes sets up the API routes
-func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterface, redisClient *redis.Client, roomService services.RoomServiceInterface, theaterService services.TheaterServiceInterface, slotService services.SlotServiceInterface, movieService services.MovieServiceInterface) {
+func RegisterRoutes(r *gin.Engine,
+	accountService services.AccountServiceInterface,
+	redisClient *redis.Client,
+	roomService services.RoomServiceInterface,
+	theaterService services.TheaterServiceInterface,
+	slotService services.SlotServiceInterface,
+	movieService services.MovieServiceInterface,
+	bookingService services.BookingServiceInterface,
+	seatService services.SeatServiceInterface) {
 	// Public Routes
 	r.POST("/login", controllers.LoginHandler(accountService))
 	r.POST("/register", controllers.RegisterHandler(accountService))
@@ -55,7 +63,21 @@ func RegisterRoutes(r *gin.Engine, accountService services.AccountServiceInterfa
 	movieGroup := r.Group("/v1/movie")
 	movieGroup.Use(middleware.JWTAuthMiddleware(redisClient))
 	{
+		movieGroup.GET("/:id", controllers.GetMovieByIDHandler(movieService))
 		movieGroup.POST("/create", controllers.CreateMovieHandler(movieService))
+		movieGroup.GET("/list-all", controllers.GetAllMoviesHandler(movieService))
+	}
+
+	bookingGroup := r.Group("/v1/booking")
+	bookingGroup.Use(middleware.JWTAuthMiddleware(redisClient))
+	{
+		bookingGroup.POST("/create", controllers.CreateBookingHandler(bookingService))
+	}
+
+	seatGroup := r.Group("/v1/seat")
+	seatGroup.Use(middleware.JWTAuthMiddleware(redisClient))
+	{
+		seatGroup.POST("/create", controllers.CreateSeatHandler(seatService))
 	}
 
 	// Health Check

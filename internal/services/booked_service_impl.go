@@ -1,7 +1,9 @@
 package services
 
 import (
+	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"log"
 	models "webapp/internal/models/db_models"
 	"webapp/internal/repositories"
@@ -52,9 +54,9 @@ func (b BookedService) IsSeatsAvailable(seatIds []int, slotId int) (bool, error)
 		slotId,
 		[]string{"COMPLETED_PAYMENT", "ON_HOLD"})
 
-	if err != nil {
+	if !errors.Is(err, gorm.ErrRecordNotFound) && err != nil {
 		log.Printf("Error while fetching booked seats by slot id: %v", err)
-		return false, fmt.Errorf("error while fetching booked seats by slot id: %w", err)
+		return false, fmt.Errorf("seat is not available")
 	}
 
 	//integrate over the seatIds and check if the seat is already booked

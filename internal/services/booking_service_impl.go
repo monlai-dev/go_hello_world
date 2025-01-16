@@ -1,9 +1,11 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 	"log"
 	"time"
 	models "webapp/internal/models/db_models"
@@ -16,18 +18,24 @@ type BookingService struct {
 	movieService      MovieServiceInterface
 	bookedSeatService BookedSeatServiceInterface
 	redisClient       *redis.Client
+	seatService       SeatServiceInterface
+	slotService       SlotServiceInterface
 }
 
 func NewBookingService(
 	bookingRepository repositories.BookingRepositoryInterface,
 	movieService MovieServiceInterface,
 	bookedSeatService BookedSeatServiceInterface,
-	redisClient *redis.Client) BookingServiceInterface {
+	redisClient *redis.Client,
+	seatService SeatServiceInterface,
+	slotService SlotServiceInterface) BookingServiceInterface {
 	return &BookingService{
 		bookingRepository: bookingRepository,
 		movieService:      movieService,
 		bookedSeatService: bookedSeatService,
 		redisClient:       redisClient,
+		seatService:       seatService,
+		slotService:       slotService,
 	}
 }
 
@@ -35,7 +43,7 @@ func (b BookingService) CreateBooking(request request_models.CreateBookingReques
 	// Check if booking seat is available
 	isSeatsAvailable, err := b.bookedSeatService.IsSeatsAvailable(request.SeatID, request.SlotID)
 
-	if err != nil {
+	if !errors.Is(err, gorm.ErrRecordNotFound) && err != nil {
 		log.Printf("Error checking seat availability: %v", err)
 		return models.Booking{}, fmt.Errorf("error checking seat availability: %w", err)
 	}
@@ -46,15 +54,31 @@ func (b BookingService) CreateBooking(request request_models.CreateBookingReques
 	}
 
 	// Get all booked seats to parse into booking
-	bookedSeats, err := b.bookedSeatService.FindAllBookedSeatWithSeatIDs(request.SeatID)
+	bookedSeats, err := b.seatService.GetSeatByIdList(request.SeatID)
+
+	slot, err := b.slotService.GetSlotByID(request.SlotID)
+	if err != nil {
+		log.Printf("Error fetching slot with ID %d: %v", request.SlotID, err)
+		return models.Booking{}, fmt.Errorf("slot with id not found %d", request.SlotID)
+	}
+
+	// integrate over the booked seats and set the status to ON_HOLD
+	var bookedSeat []models.BookedSeat
+	for _, val := range bookedSeats {
+		bookedSeat = append(bookedSeat, models.BookedSeat{
+			SeatID: val.ID,
+			Status: "ON_HOLD",
+			SlotID: slot.ID,
+		})
+	}
 
 	booking := models.Booking{
 		AccountID:   uint(accountID),
-		SlotID:      uint(request.SlotID),
+		SlotID:      slot.ID,
 		IsBooked:    "ON_HOLD",
 		BookingTime: pgtype.Timestamp{Time: time.Now(), Valid: true},
 		DueTime:     pgtype.Timestamp{Time: time.Now().Add(time.Minute * 10), Valid: true},
-		BookedSeats: bookedSeats,
+		BookedSeats: bookedSeat,
 	}
 
 	bookingResult, err := b.bookingRepository.CreateBooking(booking)

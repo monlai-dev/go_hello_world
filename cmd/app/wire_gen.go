@@ -38,17 +38,28 @@ func InitializeApp() (*gin.Engine, error) {
 	accountServiceInterface := services.NewAccountService(db, addressServiceInterface, client, accountRepositoryInterface)
 
 	movieRepository := repositories.NewMovieRepository(db)
-	movieServiceInterface := services.NewMovieService(movieRepository)
+	movieServiceInterface := services.NewMovieService(movieRepository, client)
 
 	slotRepository := repositories.NewSlotRepository(db)
-	slotServiceInterface := services.NewSlotService(slotRepository, roomServiceInterface, movieServiceInterface)
+	slotServiceInterface := services.NewSlotService(slotRepository, roomServiceInterface, movieServiceInterface, client)
+
+	seatRepository := repositories.NewSeatRepository(db)
+	seatServiceInterface := services.NewSeatService(seatRepository, roomServiceInterface)
+
+	bookedSeatRepository := repositories.NewBookedRepository(db)
+	bookedSeatServiceInterface := services.NewBookedService(bookedSeatRepository)
+
+	bookingRepository := repositories.NewBookingRepository(db)
+	bookingServiceInterface := services.NewBookingService(bookingRepository, movieServiceInterface, bookedSeatServiceInterface, client, seatServiceInterface, slotServiceInterface)
 
 	engine := ProvideRouter(accountServiceInterface,
 		client,
 		roomServiceInterface,
 		theaterServiceInterface,
 		slotServiceInterface,
-		movieServiceInterface)
+		movieServiceInterface,
+		bookingServiceInterface,
+		seatServiceInterface)
 	return engine, nil
 }
 
@@ -60,6 +71,8 @@ func ProvideRouter(
 	theaterServiceInterface services.TheaterServiceInterface,
 	slotServiceInterface services.SlotServiceInterface,
 	movieService services.MovieServiceInterface,
+	bookingServiceInterface services.BookingServiceInterface,
+	seatServiceInterface services.SeatServiceInterface,
 ) *gin.Engine {
 	r := gin.Default()
 	r.Use(gin.Logger())
@@ -68,6 +81,14 @@ func ProvideRouter(
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Use(middleware.CORSMiddleware())
 	r.Use(middleware.RateLimitMiddleware())
-	routes.RegisterRoutes(r, accountService, redisClient, roomServiceInterface, theaterServiceInterface, slotServiceInterface, movieService)
+	routes.RegisterRoutes(r,
+		accountService,
+		redisClient,
+		roomServiceInterface,
+		theaterServiceInterface,
+		slotServiceInterface,
+		movieService,
+		bookingServiceInterface,
+		seatServiceInterface)
 	return r
 }
