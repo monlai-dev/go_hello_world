@@ -12,4 +12,5 @@ type BookingServiceInterface interface {
 	GetAllBookingsBySlotID(slotID int, page int, pageSize int) ([]models.Booking, error)
 	UpdateBookingByID(bookingID int, status string) (models.Booking, error)
 	CancelBookingByID(bookingID int) error
+	ConfirmBookingByID(bookingID int) error
 }

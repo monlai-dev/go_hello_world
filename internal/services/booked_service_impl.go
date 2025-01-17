@@ -43,9 +43,16 @@ func (b BookedService) CreateBookedSeat(seat []models.BookedSeat) ([]models.Book
 	return bookedSeats, nil
 }
 
-func (b BookedService) UpdateBookedSeat(seat models.BookedSeat) error {
-	//TODO implement me
-	panic("implement me")
+func (b BookedService) UpdateBookedSeat(seat []models.BookedSeat) error {
+
+	err := b.bookedSeatRepository.UpdateBooked(seat)
+
+	if err != nil {
+		log.Printf("Error while updating booked seat: %v", err)
+		return fmt.Errorf("error while updating booked seat: %w", err)
+	}
+
+	return nil
 }
 
 func (b BookedService) IsSeatsAvailable(seatIds []int, slotId int) (bool, error) {

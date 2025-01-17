@@ -11,7 +11,6 @@ import (
 func init() {
 	err := godotenv.Load()
 	database.ConnectDb()
-
 	cache.ConnectRedis()
 
 	if err != nil {
@@ -36,25 +35,6 @@ func init() {
 
 func main() {
 
-	//var addressService = services2.NewAddressService(database.DB)
-	//var accountRepository = repositories.NewAccountRepository(database.DB)
-	//var accountService = services2.NewAccountService(database.DB, addressService, cache.RedisClient, accountRepository)
-	//
-	//r := gin.Default()
-	//r.Use(gin.Logger())
-	//r.Use(gin.Recovery())
-	//
-	//r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	//
-	//r.Use(middleware.CORSMiddleware())
-	//routes.RegisterRoutes(r, accountService, cache.RedisClient)
-	//
-	//err := r.Run()
-	//
-	//if err != nil {
-	//	return
-	//}
-
 	r, err := InitializeApp()
 	if err != nil {
 		log.Fatalf("failed to initialize app: %v", err)
@@ -63,5 +43,9 @@ func main() {
 	if err := r.Run(); err != nil {
 		log.Fatalf("failed to start server: %v", err)
 	}
+
+}
+
+func cancelBookingRequest() {
 
 }

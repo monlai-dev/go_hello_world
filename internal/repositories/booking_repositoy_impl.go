@@ -54,7 +54,7 @@ func (b BookingRepository) CreateBooking(booking models.Booking) (models.Booking
 func (b BookingRepository) UpdateBooking(booking models.Booking) error {
 
 	tx := b.db.Begin()
-	if err := tx.Save(&booking).Error; err != nil {
+	if err := tx.Updates(&booking).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("error updating booking: %v", err)
 	}

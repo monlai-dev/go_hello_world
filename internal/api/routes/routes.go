@@ -23,7 +23,8 @@ func RegisterRoutes(r *gin.Engine,
 	slotService services.SlotServiceInterface,
 	movieService services.MovieServiceInterface,
 	bookingService services.BookingServiceInterface,
-	seatService services.SeatServiceInterface) {
+	seatService services.SeatServiceInterface,
+	paymentService services.PaymentServiceInterface) {
 	// Public Routes
 	r.POST("/login", controllers.LoginHandler(accountService))
 	r.POST("/register", controllers.RegisterHandler(accountService))
@@ -72,6 +73,7 @@ func RegisterRoutes(r *gin.Engine,
 	bookingGroup.Use(middleware.JWTAuthMiddleware(redisClient))
 	{
 		bookingGroup.POST("/create", controllers.CreateBookingHandler(bookingService))
+		bookingGroup.POST("/confirm/:bookingID", controllers.ConfirmBookingHandler(bookingService))
 	}
 
 	seatGroup := r.Group("/v1/seat")
@@ -79,6 +81,10 @@ func RegisterRoutes(r *gin.Engine,
 	{
 		seatGroup.POST("/create", controllers.CreateSeatHandler(seatService))
 	}
+
+	paymentGroup := r.Group("/v1/payment")
+	paymentGroup.POST("/webhook", controllers.WebhookHandler(bookingService))
+	paymentGroup.POST("/create/:bookingId", controllers.CreatePaymentLink(paymentService))
 
 	// Health Check
 	r.GET("/", func(c *gin.Context) {

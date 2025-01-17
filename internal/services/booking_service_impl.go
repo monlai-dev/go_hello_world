@@ -1,8 +1,10 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/goccy/go-json"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -79,6 +81,7 @@ func (b BookingService) CreateBooking(request request_models.CreateBookingReques
 		BookingTime: pgtype.Timestamp{Time: time.Now(), Valid: true},
 		DueTime:     pgtype.Timestamp{Time: time.Now().Add(time.Minute * 10), Valid: true},
 		BookedSeats: bookedSeat,
+		TotalPrice:  float64(len(bookedSeat)) * slot.Price,
 	}
 
 	bookingResult, err := b.bookingRepository.CreateBooking(booking)
@@ -86,6 +89,11 @@ func (b BookingService) CreateBooking(request request_models.CreateBookingReques
 	if err != nil {
 		log.Printf("Error creating booking: %v", err)
 		return models.Booking{}, fmt.Errorf("error creating booking: %w", err)
+	}
+
+	if redisErr := cacheBooking(bookingResult, b.redisClient); redisErr != nil {
+		log.Printf("Error caching booking with ID %d: %v", bookingResult.ID, redisErr)
+		return models.Booking{}, fmt.Errorf("error caching booking: %w", redisErr)
 	}
 
 	return bookingResult, nil
@@ -124,7 +132,7 @@ func (b BookingService) UpdateBookingByID(bookingID int, status string) (models.
 	booking, err := b.bookingRepository.GetBookingById(bookingID)
 
 	if err != nil {
-		log.Printf("Error fetching booking with ID %d: %v", bookingID, err)
+		log.Printf("error fetching booking with ID %d: %v", bookingID, err)
 		return models.Booking{}, fmt.Errorf("error fetching booking: %w", err)
 	}
 
@@ -143,18 +151,89 @@ func (b BookingService) UpdateBookingByID(bookingID int, status string) (models.
 func (b BookingService) CancelBookingByID(bookingID int) error {
 	bookedSeats, err := b.bookedSeatService.FindAllBookedSeatWithBookingId(bookingID)
 	if err != nil {
-		log.Printf("Error fetching booking with ID %d: %v", bookingID, err)
+		log.Printf("error fetching booking with ID %d: %v", bookingID, err)
 		return fmt.Errorf("error fetching booking: %w", err)
 	}
 
 	for _, seat := range bookedSeats {
 		seat.Status = "CANCELED"
+	}
 
-		if err := b.bookedSeatService.UpdateBookedSeat(seat); err != nil {
-			log.Printf("Error updating booked seat with ID %d: %v", seat.ID, err)
-			return fmt.Errorf("error updating booked seat: %w", err)
-		}
+	if err := b.bookedSeatService.UpdateBookedSeat(bookedSeats); err != nil {
+		log.Printf("Error updating booked seat with ID %d: %v", bookingID, err)
+		return fmt.Errorf("error updating booked seat: %w", err)
 	}
 
 	return nil
+}
+
+func (b BookingService) ConfirmBookingByID(bookingID int) error {
+	booking, err := b.fetchBookingByID(bookingID)
+	if err != nil {
+		return err
+	}
+
+	bookedSeats, err := b.fetchBookedSeatsByBookingID(bookingID)
+	if err != nil {
+		return err
+	}
+
+	b.updateBookingStatus(&booking, "BOOKED")
+	b.updateBookedSeatsStatus(bookedSeats, "BOOKED")
+
+	if err := b.bookedSeatService.UpdateBookedSeat(bookedSeats); err != nil {
+		log.Printf("Error updating booked seat with ID %d: %v", bookingID, err)
+		return fmt.Errorf("error updating booked seat: %w", err)
+	}
+
+	if err := b.bookingRepository.UpdateBooking(booking); err != nil {
+		log.Printf("Error updating booking with ID %d: %v", bookingID, err)
+		return fmt.Errorf("error updating booking: %w", err)
+	}
+
+	return nil
+}
+
+func (b BookingService) fetchBookingByID(bookingID int) (models.Booking, error) {
+	booking, err := b.bookingRepository.GetBookingById(bookingID)
+	if err != nil {
+		log.Printf("Error fetching booking with ID %d: %v", bookingID, err)
+		return models.Booking{}, fmt.Errorf("error fetching booking: %w", err)
+	}
+	return booking, nil
+}
+
+func (b BookingService) fetchBookedSeatsByBookingID(bookingID int) ([]models.BookedSeat, error) {
+	bookedSeats, err := b.bookedSeatService.FindAllBookedSeatWithBookingId(bookingID)
+	if err != nil {
+		log.Printf("Error fetching booking with ID %d: %v", bookingID, err)
+		return nil, fmt.Errorf("error fetching booking: %w", err)
+	}
+	return bookedSeats, nil
+}
+
+func (b BookingService) updateBookingStatus(booking *models.Booking, status string) {
+	booking.IsBooked = status
+}
+
+func (b BookingService) updateBookedSeatsStatus(bookedSeats []models.BookedSeat, status string) {
+	for i := range bookedSeats {
+		bookedSeats[i].Status = status
+	}
+}
+
+func cacheBooking(booking models.Booking, redisClient *redis.Client) error {
+	// Cache the booking
+	redisKey := fmt.Sprintf("booking:%d", booking.ID)
+
+	bookingBytes, err := json.Marshal(booking)
+
+	if err != nil {
+		log.Printf("Error caching booking with ID %d: %v", booking.ID, err)
+		return fmt.Errorf("error caching booking: %w", err)
+	}
+
+	redisErr := redisClient.Set(context.Background(), redisKey, bookingBytes, time.Minute*10).Err()
+
+	return redisErr
 }

@@ -110,6 +110,7 @@ func (s SlotService) CreateSlot(createSlotRequest request_models.CreateSlotReque
 		MovieID:   movie.ID,
 		StartTime: createSlotRequest.StartTime,
 		EndTime:   createSlotRequest.EndTime,
+		Price:     createSlotRequest.Price,
 	}
 
 	slotCreated, err := s.slotRepository.CreateSlot(slotModel)

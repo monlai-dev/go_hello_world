@@ -52,6 +52,8 @@ func InitializeApp() (*gin.Engine, error) {
 	bookingRepository := repositories.NewBookingRepository(db)
 	bookingServiceInterface := services.NewBookingService(bookingRepository, movieServiceInterface, bookedSeatServiceInterface, client, seatServiceInterface, slotServiceInterface)
 
+	paymentService := services.NewPaymentService(slotServiceInterface, bookingServiceInterface, seatServiceInterface, bookedSeatServiceInterface)
+
 	engine := ProvideRouter(accountServiceInterface,
 		client,
 		roomServiceInterface,
@@ -59,7 +61,8 @@ func InitializeApp() (*gin.Engine, error) {
 		slotServiceInterface,
 		movieServiceInterface,
 		bookingServiceInterface,
-		seatServiceInterface)
+		seatServiceInterface,
+		paymentService)
 	return engine, nil
 }
 
@@ -73,6 +76,7 @@ func ProvideRouter(
 	movieService services.MovieServiceInterface,
 	bookingServiceInterface services.BookingServiceInterface,
 	seatServiceInterface services.SeatServiceInterface,
+	paymentService services.PaymentServiceInterface,
 ) *gin.Engine {
 	r := gin.Default()
 	r.Use(gin.Logger())
@@ -89,6 +93,7 @@ func ProvideRouter(
 		slotServiceInterface,
 		movieService,
 		bookingServiceInterface,
-		seatServiceInterface)
+		seatServiceInterface,
+		paymentService)
 	return r
 }
