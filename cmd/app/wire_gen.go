@@ -12,6 +12,7 @@ import (
 	"github.com/swaggo/files"
 	"github.com/swaggo/gin-swagger"
 	_ "gorm.io/gorm"
+	"log"
 	"webapp/internal/api/middleware"
 	"webapp/internal/api/routes"
 	"webapp/internal/infrastructure/cache"
@@ -49,10 +50,27 @@ func InitializeApp() (*gin.Engine, error) {
 	bookedSeatRepository := repositories.NewBookedRepository(db)
 	bookedSeatServiceInterface := services.NewBookedService(bookedSeatRepository)
 
+	cronJobService := services.NewCronJobService()
+
 	bookingRepository := repositories.NewBookingRepository(db)
-	bookingServiceInterface := services.NewBookingService(bookingRepository, movieServiceInterface, bookedSeatServiceInterface, client, seatServiceInterface, slotServiceInterface)
+	bookingServiceInterface := services.NewBookingService(bookingRepository, movieServiceInterface, bookedSeatServiceInterface, client, seatServiceInterface, slotServiceInterface, cronJobService)
 
 	paymentService := services.NewPaymentService(slotServiceInterface, bookingServiceInterface, seatServiceInterface, bookedSeatServiceInterface)
+
+
+	_ ,err := cronJobService.AddFunc("@every 1m", func() {
+		log.Printf("Running scheduler")
+		err := bookingServiceInterface.Scheduler()
+		if err != nil {
+			log.Printf("Error while running scheduler: %v", err)
+		}
+	})
+
+	if err != nil {
+		log.Printf("Error while adding cron job: %v", err)
+	}
+
+	cronJobService.StartCronJob()
 
 	engine := ProvideRouter(accountServiceInterface,
 		client,
@@ -85,6 +103,7 @@ func ProvideRouter(
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Use(middleware.CORSMiddleware())
 	r.Use(middleware.RateLimitMiddleware())
+
 	routes.RegisterRoutes(r,
 		accountService,
 		redisClient,

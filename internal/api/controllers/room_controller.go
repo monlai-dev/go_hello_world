@@ -8,6 +8,13 @@ import (
 	"webapp/internal/services"
 )
 
+type RoomResponse struct {
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	Capacity  int    `json:"capacity"`
+	TheaterId int    `json:"theater_id"`
+}
+
 var validate = validator.New()
 
 // CreateRoomHandler creates a new room
@@ -41,6 +48,11 @@ func CreateRoomHandler(roomService services.RoomServiceInterface) gin.HandlerFun
 			return
 		}
 
-		c.JSON(http.StatusOK, responseSuccess("Room created successfully", []interface{}{createdRoom}))
+		c.JSON(http.StatusOK, responseSuccess("Room created successfully", []interface{}{RoomResponse{
+			ID:        int(createdRoom.ID),
+			Name:      createdRoom.Name,
+			Capacity:  createdRoom.Capacity,
+			TheaterId: int(createdRoom.TheaterID),
+		}}))
 	}
 }

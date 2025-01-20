@@ -2,11 +2,21 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgtype"
 	"net/http"
 	"strconv"
 	"webapp/internal/models/request_models"
 	"webapp/internal/services"
 )
+
+type SlotResponse struct {
+	ID        int              `json:"id"`
+	StartTime pgtype.Timestamp `json:"start_time"`
+	EndTime   pgtype.Timestamp `json:"end_time"`
+	Price     float64          `json:"price"`
+	RoomId    int              `json:"room_id"`
+	MovieId   int              `json:"movie_id"`
+}
 
 func CreateSlotHandler(slotService services.SlotServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -27,7 +37,15 @@ func CreateSlotHandler(slotService services.SlotServiceInterface) gin.HandlerFun
 			return
 		}
 
-		c.JSON(http.StatusOK, responseSuccess("Slot created successfully", []interface{}{createdSlot}))
+		c.JSON(http.StatusOK, responseSuccess("Slot created successfully", []interface{}{SlotResponse{
+			ID:        int(createdSlot.ID),
+			StartTime: createdSlot.StartTime,
+			EndTime:   createdSlot.EndTime,
+			Price:     createdSlot.Price,
+			RoomId:    int(createdSlot.RoomID),
+			MovieId:   int(createdSlot.MovieID),
+		},
+		}))
 	}
 }
 
@@ -40,6 +58,18 @@ func GetAllSlotsByMovieIdHandler(slotService services.SlotServiceInterface) gin.
 			return
 		}
 
-		c.JSON(http.StatusOK, responseSuccess("Slots fetched successfully", []interface{}{slots}))
+		var slotResponses []SlotResponse
+		for _, slot := range slots {
+			slotResponses = append(slotResponses, SlotResponse{
+				ID:        int(slot.ID),
+				StartTime: slot.StartTime,
+				EndTime:   slot.EndTime,
+				Price:     slot.Price,
+				RoomId:    int(slot.RoomID),
+				MovieId:   int(slot.MovieID),
+			})
+		}
+
+		c.JSON(http.StatusOK, responseSuccess("Slots fetched successfully", []interface{}{slotResponses}))
 	}
 }

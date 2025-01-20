@@ -8,6 +8,13 @@ import (
 	"webapp/internal/services"
 )
 
+type MovieResponse struct {
+	ID          int    `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Duration    int    `json:"duration"`
+}
+
 func CreateMovieHandler(movieService services.MovieServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req request_models.CreateMovieRequest
@@ -22,7 +29,12 @@ func CreateMovieHandler(movieService services.MovieServiceInterface) gin.Handler
 			return
 		}
 
-		c.JSON(http.StatusOK, responseSuccess("Movie created successfully", []interface{}{createdMovie}))
+		c.JSON(http.StatusOK, responseSuccess("Movie created successfully", []interface{}{MovieResponse{
+			ID:          int(createdMovie.ID),
+			Title:       createdMovie.Title,
+			Description: createdMovie.Description,
+			Duration:    int(createdMovie.Duration),
+		}}))
 	}
 }
 
@@ -68,7 +80,12 @@ func GetMovieByIDHandler(movieService services.MovieServiceInterface) gin.Handle
 			return
 		}
 
-		c.JSON(http.StatusOK, responseSuccess("Movie retrieved successfully", []interface{}{movie}))
+		c.JSON(http.StatusOK, responseSuccess("Movie retrieved successfully", []interface{}{MovieResponse{
+			ID:          int(movie.ID),
+			Title:       movie.Title,
+			Description: movie.Description,
+			Duration:    int(movie.Duration),
+		}}))
 	}
 }
 
@@ -83,6 +100,17 @@ func GetAllMoviesHandler(movieService services.MovieServiceInterface) gin.Handle
 			return
 		}
 
-		c.JSON(http.StatusOK, responseSuccess("Movies retrieved successfully", []interface{}{movies}))
+		var movieList []MovieResponse
+
+		for _, movie := range movies {
+			movieList = append(movieList, MovieResponse{
+				ID:          int(movie.ID),
+				Title:       movie.Title,
+				Description: movie.Description,
+				Duration:    int(movie.Duration),
+			})
+
+			c.JSON(http.StatusOK, responseSuccess("Movies retrieved successfully", []interface{}{movieList}))
+		}
 	}
 }

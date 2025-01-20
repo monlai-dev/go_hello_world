@@ -8,6 +8,13 @@ import (
 	"webapp/internal/services"
 )
 
+type BookingResponse struct {
+	ID         int     `json:"id"`
+	SlotID     int     `json:"slot_id"`
+	Status     string  `json:"status"`
+	TotalPrice float64 `json:"total_price"`
+}
+
 func CreateBookingHandler(bookingService services.BookingServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request request_models.CreateBookingRequest
@@ -27,7 +34,12 @@ func CreateBookingHandler(bookingService services.BookingServiceInterface) gin.H
 			return
 		}
 
-		c.JSON(http.StatusCreated, responseSuccess("Booking created successfully", []interface{}{booking}))
+		c.JSON(http.StatusCreated, responseSuccess("Booking created successfully", []interface{}{BookingResponse{
+			ID:         int(booking.ID),
+			SlotID:     int(booking.SlotID),
+			Status:     booking.IsBooked,
+			TotalPrice: booking.TotalPrice,
+		}}))
 	}
 }
 

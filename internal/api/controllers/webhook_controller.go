@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"webapp/internal/services"
 )
@@ -14,9 +15,9 @@ import (
 func WebhookHandler(bookingService services.BookingServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		if err := payos.Key("e47ad6bc-40f4-4fc9-a723-cd8ddae9e3a8",
-			"0ca2d2e9-d6fa-4c13-9885-848080846bd7",
-			"1589dd37d76b03b0968bcd445dd4ed0e38fa63b0d5811bba8dd72b7ea88f95c0"); err != nil {
+		if err := payos.Key(os.Getenv("CLIENT_ID"),
+			os.Getenv("API_KEY"),
+			os.Getenv("CHECK_SUM_KEY")); err != nil {
 			log.Fatalf("Error setting payos key: %v", err)
 		}
 

@@ -15,6 +15,11 @@ import (
 	"webapp/internal/repositories"
 )
 
+type BookingCache struct {
+	BookingID int       `json:"booking_id"`
+	StartTime time.Time `json:"start_time"`
+	EndTime   time.Time `json:"end_time"`
+}
 type BookingService struct {
 	bookingRepository repositories.BookingRepositoryInterface
 	movieService      MovieServiceInterface
@@ -22,6 +27,7 @@ type BookingService struct {
 	redisClient       *redis.Client
 	seatService       SeatServiceInterface
 	slotService       SlotServiceInterface
+	cronJobService    *CronJobService
 }
 
 func NewBookingService(
@@ -30,7 +36,8 @@ func NewBookingService(
 	bookedSeatService BookedSeatServiceInterface,
 	redisClient *redis.Client,
 	seatService SeatServiceInterface,
-	slotService SlotServiceInterface) BookingServiceInterface {
+	slotService SlotServiceInterface,
+	cronjobService *CronJobService) BookingServiceInterface {
 	return &BookingService{
 		bookingRepository: bookingRepository,
 		movieService:      movieService,
@@ -38,6 +45,7 @@ func NewBookingService(
 		redisClient:       redisClient,
 		seatService:       seatService,
 		slotService:       slotService,
+		cronJobService:    cronjobService,
 	}
 }
 
@@ -91,7 +99,13 @@ func (b BookingService) CreateBooking(request request_models.CreateBookingReques
 		return models.Booking{}, fmt.Errorf("error creating booking: %w", err)
 	}
 
-	if redisErr := cacheBooking(bookingResult, b.redisClient); redisErr != nil {
+	cacheBookingData := BookingCache{
+		BookingID: int(bookingResult.ID),
+		StartTime: bookingResult.BookingTime.Time,
+		EndTime:   bookingResult.DueTime.Time,
+	}
+
+	if redisErr := cacheBooking(cacheBookingData, b.redisClient); redisErr != nil {
 		log.Printf("Error caching booking with ID %d: %v", bookingResult.ID, redisErr)
 		return models.Booking{}, fmt.Errorf("error caching booking: %w", redisErr)
 	}
@@ -155,9 +169,7 @@ func (b BookingService) CancelBookingByID(bookingID int) error {
 		return fmt.Errorf("error fetching booking: %w", err)
 	}
 
-	for _, seat := range bookedSeats {
-		seat.Status = "CANCELED"
-	}
+	b.updateBookedSeatsStatus(bookedSeats, "CANCELED")
 
 	if err := b.bookedSeatService.UpdateBookedSeat(bookedSeats); err != nil {
 		log.Printf("Error updating booked seat with ID %d: %v", bookingID, err)
@@ -222,18 +234,79 @@ func (b BookingService) updateBookedSeatsStatus(bookedSeats []models.BookedSeat,
 	}
 }
 
-func cacheBooking(booking models.Booking, redisClient *redis.Client) error {
+func cacheBooking(booking BookingCache, redisClient *redis.Client) error {
 	// Cache the booking
-	redisKey := fmt.Sprintf("booking:%d", booking.ID)
+	redisKey := fmt.Sprintf("booking:%d", booking.BookingID)
 
 	bookingBytes, err := json.Marshal(booking)
 
 	if err != nil {
-		log.Printf("Error caching booking with ID %d: %v", booking.ID, err)
+		log.Printf("Error caching booking with ID %d: %v", booking.BookingID, err)
 		return fmt.Errorf("error caching booking: %w", err)
 	}
 
-	redisErr := redisClient.Set(context.Background(), redisKey, bookingBytes, time.Minute*10).Err()
+	redisErr := redisClient.Set(context.Background(), redisKey, bookingBytes, time.Minute*15).Err()
 
 	return redisErr
+}
+
+func getBookingFromCache(redisClient *redis.Client) ([]BookingCache, error) {
+	// Get all bookings from cache
+	redisKeys, err := redisClient.Keys(context.Background(), "booking:*").Result()
+
+	if err != nil {
+		log.Printf("Error fetching booking keys: %v", err)
+		return nil, fmt.Errorf("error fetching booking keys: %w", err)
+	}
+
+	var bookings []BookingCache
+	for _, key := range redisKeys {
+		bookingBytes, err := redisClient.Get(context.Background(), key).Bytes()
+		if err != nil {
+			log.Printf("Error fetching booking with key %s: %v", key, err)
+			return nil, fmt.Errorf("error fetching booking with key: %w", err)
+		}
+
+		var booking BookingCache
+		if err := json.Unmarshal(bookingBytes, &booking); err != nil {
+			log.Printf("Error unmarshalling booking with key %s: %v", key, err)
+			return nil, fmt.Errorf("error unmarshalling booking: %w", err)
+		}
+		
+		bookings = append(bookings, booking)
+	}
+
+	return bookings, nil
+
+}
+
+func (b BookingService) ScanExpiredBooking() error {
+	expiredBookings, err := getBookingFromCache(b.redisClient)
+	if err != nil {
+		log.Printf("Error fetching expired bookings: %v", err)
+		return fmt.Errorf("error fetching expired bookings: %w", err)
+	}
+
+	log.Printf("Expired bookings: %v", expiredBookings)
+
+	for _, booking := range expiredBookings {
+		if booking.EndTime.Before(time.Now()) {
+			err := b.CancelBookingByID(booking.BookingID)
+			if err != nil {
+				log.Printf("Error cancelling booking with ID %d: %v", booking.BookingID, err)
+				return fmt.Errorf("error cancelling booking: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (b BookingService) Scheduler() error {
+	err := b.ScanExpiredBooking()
+	if err != nil {
+		log.Printf("Error scanning expired booking: %v", err)
+		return fmt.Errorf("error scanning expired booking: %w", err)
+	}
+	return nil
 }

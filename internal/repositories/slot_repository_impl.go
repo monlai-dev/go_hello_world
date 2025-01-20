@@ -144,7 +144,10 @@ func (s SlotRepository) GetSlotByRoomIdAndBetweenDates(roomId int, startDate pgt
 
 	var slots []models.Slot
 
-	if err := s.db.Where("room_id = ? AND start_time >= ? AND end_time <= ?", roomId, startDate, endDate).Find(&slots).Error; err != nil {
+	startDateOnly := startDate.Time.Format("2006-01-02")
+	endDateOnly := endDate.Time.Format("2006-01-02")
+
+	if err := s.db.Where("room_id = ? AND DATE(start_time) >= ? AND DATE(end_time) <= ?", roomId, endDateOnly, startDateOnly).Find(&slots).Error; err != nil {
 		return nil, fmt.Errorf(ERROR_MESSAGE, err)
 	}
 

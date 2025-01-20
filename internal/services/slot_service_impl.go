@@ -100,6 +100,7 @@ func (s SlotService) CreateSlot(createSlotRequest request_models.CreateSlotReque
 		return models.Slot{}, err
 	}
 
+	log.Printf("Slot is available: %v", slots)
 	// If slot is not available, return error
 	if !available {
 		return models.Slot{}, fmt.Errorf("slot is not available")
@@ -162,7 +163,11 @@ func (s SlotService) FindAllSlotBetweenDates(startDate pgtype.Timestamp, endDate
 func isRequestTimeAvailable(startTime pgtype.Timestamp, endTime pgtype.Timestamp, slots []models.Slot) (bool, error) {
 
 	for _, slot := range slots {
-		if startTime.Time.Before(slot.EndTime.Time) && endTime.Time.After(slot.StartTime.Time) {
+		if slot.EndTime.Time.Equal(endTime.Time) ||
+			slot.StartTime.Time.Equal(startTime.Time) ||
+			(startTime.Time.After(slot.StartTime.Time) && startTime.Time.Before(slot.EndTime.Time)) ||
+			(endTime.Time.After(slot.StartTime.Time) && endTime.Time.Before(slot.EndTime.Time)) ||
+			(startTime.Time.Before(slot.StartTime.Time) && endTime.Time.After(slot.EndTime.Time)) {
 			return false, fmt.Errorf("slot is not available")
 		}
 	}

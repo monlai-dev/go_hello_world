@@ -13,4 +13,5 @@ type BookingServiceInterface interface {
 	UpdateBookingByID(bookingID int, status string) (models.Booking, error)
 	CancelBookingByID(bookingID int) error
 	ConfirmBookingByID(bookingID int) error
+	Scheduler() error
 }

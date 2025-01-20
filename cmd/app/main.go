@@ -6,13 +6,14 @@ import (
 	"log"
 	"webapp/internal/infrastructure/cache"
 	"webapp/internal/infrastructure/database"
+	models "webapp/internal/models/db_models"
 )
 
 func init() {
 	err := godotenv.Load()
 	database.ConnectDb()
 	cache.ConnectRedis()
-
+	database.DB.AutoMigrate(&models.Account{}, &models.Address{}, &models.Theater{}, &models.Movie{}, &models.Room{}, &models.Slot{}, &models.Seat{}, &models.BookedSeat{}, &models.Booking{})
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
@@ -39,13 +40,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to initialize app: %v", err)
 	}
-
 	if err := r.Run(); err != nil {
 		log.Fatalf("failed to start server: %v", err)
 	}
-
-}
-
-func cancelBookingRequest() {
-
 }

@@ -3,6 +3,7 @@ package cache
 import (
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/net/context"
+	"os"
 )
 
 var RedisClient *redis.Client
@@ -10,7 +11,7 @@ var ctx = context.Background()
 
 func ConnectRedis() *redis.Client {
 	RedisClient = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     os.Getenv("RENDER_REDIS_URL"),
 		Password: "",
 		DB:       0,
 	})
