@@ -28,7 +28,7 @@ func CreateBookingHandler(bookingService services.BookingServiceInterface) gin.H
 			return
 		}
 
-		booking, err := bookingService.CreateBooking(request, 14)
+		booking, err := bookingService.CreateBooking(request, c.GetString("email"))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, responseError(err.Error()))
 			return

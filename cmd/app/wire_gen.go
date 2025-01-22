@@ -53,7 +53,7 @@ func InitializeApp() (*gin.Engine, error) {
 	cronJobService := services.NewCronJobService()
 
 	bookingRepository := repositories.NewBookingRepository(db)
-	bookingServiceInterface := services.NewBookingService(bookingRepository, movieServiceInterface, bookedSeatServiceInterface, client, seatServiceInterface, slotServiceInterface, cronJobService)
+	bookingServiceInterface := services.NewBookingService(bookingRepository, movieServiceInterface, bookedSeatServiceInterface, client, seatServiceInterface, slotServiceInterface, cronJobService, accountServiceInterface)
 
 	paymentService := services.NewPaymentService(slotServiceInterface, bookingServiceInterface, seatServiceInterface, bookedSeatServiceInterface)
 

@@ -6,7 +6,7 @@ import (
 )
 
 type BookingServiceInterface interface {
-	CreateBooking(request request_models.CreateBookingRequest, accountID int) (models.Booking, error)
+	CreateBooking(request request_models.CreateBookingRequest, email string) (models.Booking, error)
 	GetBookingByID(bookingID int) (models.Booking, error)
 	GetAllBookingsByAccountID(accountID int, page int, pageSize int) ([]models.Booking, error)
 	GetAllBookingsBySlotID(slotID int, page int, pageSize int) ([]models.Booking, error)

@@ -28,6 +28,7 @@ type BookingService struct {
 	seatService       SeatServiceInterface
 	slotService       SlotServiceInterface
 	cronJobService    *CronJobService
+	accountService    AccountServiceInterface
 }
 
 func NewBookingService(
@@ -37,7 +38,8 @@ func NewBookingService(
 	redisClient *redis.Client,
 	seatService SeatServiceInterface,
 	slotService SlotServiceInterface,
-	cronjobService *CronJobService) BookingServiceInterface {
+	cronjobService *CronJobService,
+	accountService AccountServiceInterface) BookingServiceInterface {
 	return &BookingService{
 		bookingRepository: bookingRepository,
 		movieService:      movieService,
@@ -46,10 +48,11 @@ func NewBookingService(
 		seatService:       seatService,
 		slotService:       slotService,
 		cronJobService:    cronjobService,
+		accountService:    accountService,
 	}
 }
 
-func (b BookingService) CreateBooking(request request_models.CreateBookingRequest, accountID int) (models.Booking, error) {
+func (b BookingService) CreateBooking(request request_models.CreateBookingRequest, email string) (models.Booking, error) {
 	// Check if booking seat is available
 	isSeatsAvailable, err := b.bookedSeatService.IsSeatsAvailable(request.SeatID, request.SlotID)
 
@@ -82,8 +85,14 @@ func (b BookingService) CreateBooking(request request_models.CreateBookingReques
 		})
 	}
 
+	account, err := b.accountService.GetAccountByEmail(email)
+	if err != nil {
+		log.Printf("Error fetching account with email %s: %v", email, err)
+		return models.Booking{}, fmt.Errorf("error fetching account: %w", err)
+	}
+
 	booking := models.Booking{
-		AccountID:   uint(accountID),
+		AccountID:   account.ID,
 		SlotID:      slot.ID,
 		IsBooked:    "ON_HOLD",
 		BookingTime: pgtype.Timestamp{Time: time.Now(), Valid: true},
@@ -272,7 +281,7 @@ func getBookingFromCache(redisClient *redis.Client) ([]BookingCache, error) {
 			log.Printf("Error unmarshalling booking with key %s: %v", key, err)
 			return nil, fmt.Errorf("error unmarshalling booking: %w", err)
 		}
-		
+
 		bookings = append(bookings, booking)
 	}
 

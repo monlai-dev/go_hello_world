@@ -91,6 +91,7 @@ func (p PaymentService) CreatePaymentLinkWithPayOsUsingBookingId(bookingId int) 
 	data, err := payos.CreatePaymentLink(body)
 	if err != nil {
 		log.Printf("error creating payment link: %v", err)
+		return "", fmt.Errorf("error creating payment link")
 	}
 
 	return data.CheckoutUrl, nil
