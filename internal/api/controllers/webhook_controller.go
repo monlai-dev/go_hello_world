@@ -52,7 +52,16 @@ func WebhookHandler(bookingService services.BookingServiceInterface) gin.Handler
 			return
 		}
 
-		if err := bookingService.ConfirmBookingByID(int(data.OrderCode)); err != nil {
+		if data.OrderCode == 123 {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "COnfirm webhook complete",
+			})
+			return
+
+		}
+
+		// -1000 is the offset for the order code
+		if err := bookingService.ConfirmBookingByID(int(data.OrderCode) - 1000); err != nil {
 			log.Printf("Error confirming booking: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Failed to confirm booking",

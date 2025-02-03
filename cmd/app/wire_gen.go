@@ -57,7 +57,7 @@ func InitializeApp() (*gin.Engine, error) {
 
 	paymentService := services.NewPaymentService(slotServiceInterface, bookingServiceInterface, seatServiceInterface, bookedSeatServiceInterface)
 
-
+	// Add cron job
 	_ ,err := cronJobService.AddFunc("@every 1m", func() {
 		log.Printf("Running scheduler")
 		err := bookingServiceInterface.Scheduler()
@@ -69,8 +69,10 @@ func InitializeApp() (*gin.Engine, error) {
 	if err != nil {
 		log.Printf("Error while adding cron job: %v", err)
 	}
-
 	cronJobService.StartCronJob()
+
+	socketIoService := services.NewWebsocketService()
+	socketIoService.Start()
 
 	engine := ProvideRouter(accountServiceInterface,
 		client,
@@ -80,7 +82,8 @@ func InitializeApp() (*gin.Engine, error) {
 		movieServiceInterface,
 		bookingServiceInterface,
 		seatServiceInterface,
-		paymentService)
+		paymentService,
+		socketIoService)
 	return engine, nil
 }
 
@@ -95,6 +98,7 @@ func ProvideRouter(
 	bookingServiceInterface services.BookingServiceInterface,
 	seatServiceInterface services.SeatServiceInterface,
 	paymentService services.PaymentServiceInterface,
+	socketService *services.WebsocketService,
 ) *gin.Engine {
 	r := gin.Default()
 	r.Use(gin.Logger())
@@ -103,6 +107,7 @@ func ProvideRouter(
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Use(middleware.CORSMiddleware())
 	r.Use(middleware.RateLimitMiddleware())
+	socketService.AttachToRouter(r)
 
 	routes.RegisterRoutes(r,
 		accountService,
@@ -113,6 +118,7 @@ func ProvideRouter(
 		movieService,
 		bookingServiceInterface,
 		seatServiceInterface,
-		paymentService)
+		paymentService,
+		socketService,)
 	return r
 }

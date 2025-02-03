@@ -212,6 +212,11 @@ func (b BookingService) ConfirmBookingByID(bookingID int) error {
 		return fmt.Errorf("error updating booking: %w", err)
 	}
 
+	if err := removeBookingFromCache(bookingID, b.redisClient); err != nil {
+		log.Printf("Error removing booking with ID %d from cache: %v", bookingID, err)
+		return fmt.Errorf("error removing booking from cache: %w", err)
+	}
+
 	return nil
 }
 
@@ -316,6 +321,16 @@ func (b BookingService) Scheduler() error {
 	if err != nil {
 		log.Printf("Error scanning expired booking: %v", err)
 		return fmt.Errorf("error scanning expired booking: %w", err)
+	}
+	return nil
+}
+
+func removeBookingFromCache(bookingID int, redisClient *redis.Client) error {
+	redisKey := fmt.Sprintf("booking:%d", bookingID)
+	redisErr := redisClient.Del(context.Background(), redisKey).Err()
+	if redisErr != nil {
+		log.Printf("Error deleting booking with ID %d: %v", bookingID, redisErr)
+		return fmt.Errorf("error deleting booking: %w", redisErr)
 	}
 	return nil
 }

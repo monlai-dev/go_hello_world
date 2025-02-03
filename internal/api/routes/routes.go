@@ -24,7 +24,8 @@ func RegisterRoutes(r *gin.Engine,
 	movieService services.MovieServiceInterface,
 	bookingService services.BookingServiceInterface,
 	seatService services.SeatServiceInterface,
-	paymentService services.PaymentServiceInterface) {
+	paymentService services.PaymentServiceInterface,
+	socketHandler *services.WebsocketService) {
 	// Public Routes
 	r.POST("/login", controllers.LoginHandler(accountService))
 	r.POST("/register", controllers.RegisterHandler(accountService))
