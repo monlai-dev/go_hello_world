@@ -1,9 +1,13 @@
 package services
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	socketio "github.com/googollee/go-socket.io"
+	"github.com/googollee/go-socket.io/engineio"
 	"log"
+	"time"
+	"webapp/pkg/utils"
 )
 
 type WebsocketService struct {
@@ -20,7 +24,10 @@ type ConnectRoomRequest struct {
 }
 
 func NewWebsocketService() *WebsocketService {
-	server := socketio.NewServer(nil)
+	server := socketio.NewServer(&engineio.Options{
+		PingInterval: 20 * time.Second,
+		PingTimeout:  60 * time.Second,
+	})
 
 	return &WebsocketService{
 		Server: server,
@@ -34,6 +41,17 @@ func (ws *WebsocketService) AttachToRouter(r *gin.Engine) {
 func (ws *WebsocketService) Start() {
 
 	ws.Server.OnConnect("/", func(s socketio.Conn) error {
+
+		//Verify jwt token in header
+		header := s.RemoteHeader()
+		_, err := utils.ValidateToken(header.Get("JWT"))
+		if err != nil {
+			err := s.Close()
+			if err != nil {
+				return errors.New("JWT token invalid")
+			}
+		}
+
 		s.SetContext("")
 		log.Printf("connected: %v", s.ID())
 		return nil
