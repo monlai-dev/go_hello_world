@@ -1,7 +1,7 @@
-
 # Cinema Ticket Booking System 🎬
 
 A full-featured cinema ticket booking system built with Golang, featuring real-time seat availability updates and payment integration.
+🌐 https://app-lastest.onrender.com
 
 ## Features ✨
 
@@ -22,6 +22,8 @@ A full-featured cinema ticket booking system built with Golang, featuring real-t
 - **Ticket Management** 🎫
   - Booking cancellation
   - Booking history
+- **Email Notifications** 📧
+  - Send booking confirmation emails using RabbitMQ
 
 ### Advanced Features
 - Redis caching for high-frequency data
@@ -34,11 +36,12 @@ A full-featured cinema ticket booking system built with Golang, featuring real-t
 | Component              | Technology                          |
 |------------------------|-------------------------------------|
 | **Backend**            | Go 1.20+                           |
-| **Database**           | PostgreSQL                          |
-| **Authentication**      | JWT                                 |
-| **Caching**            | Redis                               |
-| **Real-time**          | Socket.IO                           |
-| **Containerization**   | Docker & Docker Compose             |
-| **Payment Gateway**     | PayOS/VNPay (REST API integration)  |
-| **Logging**            | Log                            |
+| **Database**           | PostgreSQL                         |
+| **Authentication**     | JWT                                |
+| **Caching**           | Redis                              |
+| **Real-time**         | Socket.IO                          |
+| **Message Queue**     | RabbitMQ (email notifications)     |
+| **Containerization**  | Docker & Docker Compose           |
+| **Payment Gateway**   | PayOS/VNPay (REST API integration) |
+| **Logging**           | Log                                |
 
