@@ -8,15 +8,19 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
 	"github.com/swaggo/files"
 	"github.com/swaggo/gin-swagger"
+	gomail "gopkg.in/mail.v2"
 	_ "gorm.io/gorm"
 	"log"
+	"os"
 	"webapp/internal/api/middleware"
 	"webapp/internal/api/routes"
 	"webapp/internal/infrastructure/cache"
 	"webapp/internal/infrastructure/database"
+	"webapp/internal/infrastructure/rabbitMq"
 	"webapp/internal/repositories"
 	"webapp/internal/services"
 )
@@ -52,13 +56,40 @@ func InitializeApp() (*gin.Engine, error) {
 
 	cronJobService := services.NewCronJobService()
 
+	// Rabbitmq
+	rabbitConnect, err := rabbitMq.ConnectRabbitMq()
+	if err != nil {
+		log.Fatalf("Error connecting to rabbitmq: %v", err)
+	}
+
+	rabbitClient, err := rabbitMq.NewRabbitClient(rabbitConnect)
+	{
+		if err != nil {
+			log.Fatalf("Error creating rabbitmq client: %v", err)
+		}
+	}
+
+	rabbitClient.DeclareNewExchange(rabbitClient, "email_exchange", amqp.ExchangeTopic)
+	rabbitClient.DeclareNewQueue(rabbitClient, "email_queue")
+	rabbitClient.BindQueue(rabbitClient, "email_queue", "email_exchange", "email")
+	// Rabbitmq
+
+	// Mail service
+	mailService := services.NewMailService(gomail.NewDialer("smtp.gmail.com", 587, os.Getenv("EMAIL_USERNAME"), os.Getenv("EMAIL_PASSWORD")), rabbitClient)
+	if consumeErr := mailService.SendMailWithQueue() ; consumeErr != nil {
+		log.Fatalf("Error consuming message: %v", consumeErr)
+	}  // Start consuming message
+	// Mail service
+
 	bookingRepository := repositories.NewBookingRepository(db)
-	bookingServiceInterface := services.NewBookingService(bookingRepository, movieServiceInterface, bookedSeatServiceInterface, client, seatServiceInterface, slotServiceInterface, cronJobService, accountServiceInterface)
+	bookingServiceInterface := services.NewBookingService(bookingRepository, movieServiceInterface, bookedSeatServiceInterface, client, seatServiceInterface, slotServiceInterface, cronJobService, accountServiceInterface, rabbitClient)
 
 	paymentService := services.NewPaymentService(slotServiceInterface, bookingServiceInterface, seatServiceInterface, bookedSeatServiceInterface)
 
+
+
 	// Add cron job
-	_ ,err := cronJobService.AddFunc("@every 1m", func() {
+	_ ,err = cronJobService.AddFunc("@every 1m", func() {
 		log.Printf("Running scheduler")
 		err := bookingServiceInterface.Scheduler()
 		if err != nil {
@@ -70,9 +101,13 @@ func InitializeApp() (*gin.Engine, error) {
 		log.Printf("Error while adding cron job: %v", err)
 	}
 	cronJobService.StartCronJob()
+	// Add cron job
 
+	// Websocket
 	socketIoService := services.NewWebsocketService()
 	socketIoService.Start()
+	// Websocket
+
 
 	engine := ProvideRouter(accountServiceInterface,
 		client,
@@ -83,7 +118,8 @@ func InitializeApp() (*gin.Engine, error) {
 		bookingServiceInterface,
 		seatServiceInterface,
 		paymentService,
-		socketIoService)
+		socketIoService,
+		rabbitClient)
 	return engine, nil
 }
 
@@ -99,6 +135,7 @@ func ProvideRouter(
 	seatServiceInterface services.SeatServiceInterface,
 	paymentService services.PaymentServiceInterface,
 	socketService *services.WebsocketService,
+	rabbitClient *rabbitMq.RabbitMq,
 ) *gin.Engine {
 	r := gin.Default()
 	r.Use(gin.Logger())
@@ -119,6 +156,7 @@ func ProvideRouter(
 		bookingServiceInterface,
 		seatServiceInterface,
 		paymentService,
-		socketService,)
+		socketService,
+		rabbitClient,)
 	return r
 }

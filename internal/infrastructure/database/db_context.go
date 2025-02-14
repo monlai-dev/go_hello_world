@@ -12,7 +12,7 @@ var DB *gorm.DB
 func ConnectDb() *gorm.DB {
 
 	var err error
-	dsn := os.Getenv("LOCAL_DATABASE_URL")
+	dsn := os.Getenv("RENDER_DATABASE_URL")
 
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 

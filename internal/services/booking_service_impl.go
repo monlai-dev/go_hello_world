@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"github.com/goccy/go-json"
 	"github.com/jackc/pgx/v5/pgtype"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 	"log"
 	"time"
+	"webapp/internal/infrastructure/rabbitMq"
 	models "webapp/internal/models/db_models"
 	"webapp/internal/models/request_models"
 	"webapp/internal/repositories"
@@ -20,6 +22,13 @@ type BookingCache struct {
 	StartTime time.Time `json:"start_time"`
 	EndTime   time.Time `json:"end_time"`
 }
+
+type EmailRequest struct {
+	Subject string `json:"subject"`
+	Email   string `json:"email"`
+	Body    string `json:"body"`
+}
+
 type BookingService struct {
 	bookingRepository repositories.BookingRepositoryInterface
 	movieService      MovieServiceInterface
@@ -29,6 +38,7 @@ type BookingService struct {
 	slotService       SlotServiceInterface
 	cronJobService    *CronJobService
 	accountService    AccountServiceInterface
+	rabbitClient      *rabbitMq.RabbitMq
 }
 
 func NewBookingService(
@@ -39,7 +49,9 @@ func NewBookingService(
 	seatService SeatServiceInterface,
 	slotService SlotServiceInterface,
 	cronjobService *CronJobService,
-	accountService AccountServiceInterface) BookingServiceInterface {
+	accountService AccountServiceInterface,
+	rabbitClient *rabbitMq.RabbitMq,
+) BookingServiceInterface {
 	return &BookingService{
 		bookingRepository: bookingRepository,
 		movieService:      movieService,
@@ -49,6 +61,7 @@ func NewBookingService(
 		slotService:       slotService,
 		cronJobService:    cronjobService,
 		accountService:    accountService,
+		rabbitClient:      rabbitClient,
 	}
 }
 
@@ -332,5 +345,33 @@ func removeBookingFromCache(bookingID int, redisClient *redis.Client) error {
 		log.Printf("Error deleting booking with ID %d: %v", bookingID, redisErr)
 		return fmt.Errorf("error deleting booking: %w", redisErr)
 	}
+	return nil
+}
+
+func (b BookingService) SendNotiEmail(subject string, toEmail string, body string) error {
+
+	emailRequest := EmailRequest{
+		Subject: subject,
+		Email:   toEmail,
+		Body:    body,
+	}
+
+	jsonBody, err := json.Marshal(emailRequest)
+	if err != nil {
+		log.Println("Error marshalling email request: ", err)
+		return errors.New("error marshalling email request")
+	}
+
+	rabbitErr := b.rabbitClient.Publish(b.rabbitClient, "email_exchange", "email", amqp.Publishing{
+		ContentType:  "text/html",
+		Body:         jsonBody,
+		DeliveryMode: amqp.Persistent,
+	})
+
+	if rabbitErr != nil {
+		log.Println("Error publishing email request: ", rabbitErr)
+		return errors.New("error publishing email request")
+	}
+
 	return nil
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"webapp/internal/api/controllers"
 	"webapp/internal/api/middleware"
+	"webapp/internal/infrastructure/rabbitMq"
 	"webapp/internal/services"
 )
 
@@ -25,7 +26,8 @@ func RegisterRoutes(r *gin.Engine,
 	bookingService services.BookingServiceInterface,
 	seatService services.SeatServiceInterface,
 	paymentService services.PaymentServiceInterface,
-	socketHandler *services.WebsocketService) {
+	socketHandler *services.WebsocketService,
+	rabbitClient *rabbitMq.RabbitMq) {
 	// Public Routes
 	r.POST("/login", controllers.LoginHandler(accountService))
 	r.POST("/register", controllers.RegisterHandler(accountService))
@@ -73,8 +75,9 @@ func RegisterRoutes(r *gin.Engine,
 	bookingGroup := r.Group("/v1/booking")
 	bookingGroup.Use(middleware.JWTAuthMiddleware(redisClient))
 	{
-		bookingGroup.POST("/create", controllers.CreateBookingHandler(bookingService))
+		bookingGroup.POST("/create", controllers.CreateBookingHandler(bookingService, rabbitClient))
 		bookingGroup.POST("/confirm/:bookingID", controllers.ConfirmBookingHandler(bookingService))
+		bookingGroup.POST("/test", controllers.TestingRabbitMq(bookingService))
 	}
 
 	seatGroup := r.Group("/v1/seat")
