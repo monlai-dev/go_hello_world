@@ -141,7 +141,7 @@ func (b BookingService) GetBookingByID(bookingID int) (models.Booking, error) {
 
 	if err != nil {
 		log.Printf("error fetching booking with ID %d: %v", bookingID, err)
-		return models.Booking{}, fmt.Errorf("error fetching booking: %w", err)
+		return models.Booking{}, fmt.Errorf("booking with id %d not found ", bookingID)
 	}
 
 	return booking, nil

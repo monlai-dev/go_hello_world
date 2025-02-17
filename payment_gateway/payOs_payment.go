@@ -9,14 +9,9 @@ import (
 
 func TestCreatePaymentLink() {
 	payos.Key("e47ad6bc-40f4-4fc9-a723-cd8ddae9e3a8", "0ca2d2e9-d6fa-4c13-9885-848080846bd7", "1589dd37d76b03b0968bcd445dd4ed0e38fa63b0d5811bba8dd72b7ea88f95c0")
-	webhook, err := payos.ConfirmWebhook("https://4636-111-65-255-147.ngrok-free.app/v1/payment/webhook")
-	if err != nil {
-		log.Printf("Error: %v", err)
-	}
 
-	log.Printf("Webhook: %v", webhook)
 	body := payos.CheckoutRequestType{
-		OrderCode: 23,
+		OrderCode: 10002,
 		Amount:    10000,
 		Items: []payos.Item{
 			{

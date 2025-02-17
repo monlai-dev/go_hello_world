@@ -8,18 +8,18 @@ import (
 )
 
 type PaymentService struct {
-	slotService       SlotServiceInterface
-	bookingService    BookingServiceInterface
-	seatService       SeatServiceInterface
-	bookedSeatService BookedSeatServiceInterface
+	SlotService       SlotServiceInterface
+	BookingService    BookingServiceInterface
+	SeatService       SeatServiceInterface
+	BookedSeatService BookedSeatServiceInterface
 }
 
 func NewPaymentService(slotService SlotServiceInterface, bookingService BookingServiceInterface, seatService SeatServiceInterface, bookedSeatService BookedSeatServiceInterface) PaymentServiceInterface {
 	return &PaymentService{
-		slotService:       slotService,
-		bookingService:    bookingService,
-		seatService:       seatService,
-		bookedSeatService: bookedSeatService,
+		SlotService:       slotService,
+		BookingService:    bookingService,
+		SeatService:       seatService,
+		BookedSeatService: bookedSeatService,
 	}
 }
 
@@ -27,21 +27,21 @@ func (p PaymentService) CreatePaymentLinkWithPayOsUsingBookingId(bookingId int) 
 	var items []payos.Item
 
 	// Get booking by booking id
-	booking, err := p.bookingService.GetBookingByID(bookingId)
+	booking, err := p.BookingService.GetBookingByID(bookingId)
 	if err != nil {
 		log.Printf("error fetching booking: %v", err)
 		return "", fmt.Errorf("error fetching booking")
 	}
 
 	// Get all booked seats by booking id
-	bookedSeats, err := p.bookedSeatService.FindAllBookedSeatWithBookingId(bookingId)
+	bookedSeats, err := p.BookedSeatService.FindAllBookedSeatWithBookingId(bookingId)
 	if err != nil {
 		log.Printf("error fetching booked seats with id: %d, error: %v", bookingId, err)
 		return "", fmt.Errorf("error fetching booked seats")
 	}
 
 	// Get slot by slot id
-	slot, err := p.slotService.GetSlotByID(int(booking.SlotID))
+	slot, err := p.SlotService.GetSlotByID(int(booking.SlotID))
 	if err != nil {
 		log.Printf("error fetching slot with id: %d, error: %v", booking.SlotID, err)
 		return "", fmt.Errorf("error fetching slot")
@@ -54,7 +54,7 @@ func (p PaymentService) CreatePaymentLinkWithPayOsUsingBookingId(bookingId int) 
 	}
 
 	// Get seats by seat ids
-	seatList, err := p.seatService.GetSeatByIdList(seatIds)
+	seatList, err := p.SeatService.GetSeatByIdList(seatIds)
 	if err != nil {
 		log.Printf("error fetching seats: %v", err)
 		return "", fmt.Errorf("error fetching seats")
