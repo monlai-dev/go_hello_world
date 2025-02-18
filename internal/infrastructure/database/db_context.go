@@ -14,10 +14,10 @@ var dataBaseUrl string
 func init() {
 	if os.Getenv("ENV") == "staging" {
 		dataBaseUrl = os.Getenv("RENDER_DATABASE_URL")
-	} else {
-		dataBaseUrl = os.Getenv("DATABASE_URL")
+		return
 	}
 
+	dataBaseUrl = os.Getenv("DATABASE_URL")
 }
 
 func ConnectDb() *gorm.DB {

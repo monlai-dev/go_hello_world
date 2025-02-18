@@ -26,6 +26,7 @@ EXPOSE 3000
 
 # Use exec form for CMD
 CMD ["/bin/sh", "-c", "echo \"PORT=$PORT\" > .env && \
+    echo \"RENDER_DATABASE_URL=$RENDER_DATABASE_URL\" >> .env && \
     echo \"DATABASE_URL=$DATABASE_URL\" >> .env && \
     echo \"JWT_SECRET=$JWT_SECRET\" >> .env && \
     echo \"STRIPE_SECRET=$STRIPE_SECRET\" >> .env && \
