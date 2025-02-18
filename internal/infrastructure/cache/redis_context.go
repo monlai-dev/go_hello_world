@@ -22,11 +22,13 @@ func init() {
 }
 
 func ConnectRedis() *redis.Client {
-	RedisClient = redis.NewClient(&redis.Options{
-		Addr:     redisKey,
-		Password: "",
-		DB:       0,
-	})
+
+	opt, err := redis.ParseURL(redisKey)
+	if err != nil {
+		panic(err)
+	}
+
+	RedisClient = redis.NewClient(opt)
 
 	if _, err := RedisClient.Ping(ctx).Result(); err != nil {
 		panic(err)
