@@ -10,6 +10,9 @@ RUN go mod download
 # Copy the source code
 COPY . .
 
+# Run unit tests before building the binary
+RUN go test -v ./unit_test/... 
+
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/app
 
