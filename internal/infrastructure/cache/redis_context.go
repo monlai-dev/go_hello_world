@@ -13,11 +13,11 @@ var redisKey string
 
 func init() {
 	if os.Getenv("ENV") == "staging" {
-		redisKey = "RENDER_REDIS_URL"
+		redisKey = os.Getenv("RENDER_REDIS_URL")
 		return
 	}
 
-	redisKey = "REDIS_URL"
+	redisKey = os.Getenv("REDIS_URL")
 
 }
 
