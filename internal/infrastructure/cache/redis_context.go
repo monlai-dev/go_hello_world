@@ -9,9 +9,21 @@ import (
 var RedisClient *redis.Client
 var ctx = context.Background()
 
+var redisKey string
+
+func init() {
+	if os.Getenv("ENV") == "staging" {
+		redisKey = "RENDER_REDIS_URL"
+		return
+	}
+
+	redisKey = "REDIS_URL"
+
+}
+
 func ConnectRedis() *redis.Client {
 	RedisClient = redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_URL"),
+		Addr:     redisKey,
 		Password: "",
 		DB:       0,
 	})

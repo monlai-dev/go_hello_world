@@ -9,10 +9,21 @@ import (
 
 var DB *gorm.DB
 
+var dataBaseUrl string
+
+func init() {
+	if os.Getenv("ENV") == "staging" {
+		dataBaseUrl = "RENDER_DATABASE_URL"
+		return
+	}
+
+	dataBaseUrl = "DATABASE_URL"
+}
+
 func ConnectDb() *gorm.DB {
 
 	var err error
-	dsn := os.Getenv("DATABASE_URL")
+	dsn := dataBaseUrl
 
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
