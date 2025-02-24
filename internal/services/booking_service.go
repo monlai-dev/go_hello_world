@@ -14,5 +14,5 @@ type BookingServiceInterface interface {
 	CancelBookingByID(bookingID int) error
 	ConfirmBookingByID(bookingID int) error
 	Scheduler() error
-	SendNotiEmail(subject string, toEmail string, body string) error
+	SendNotiEmail([]request_models.TestingEmailFormat) error
 }
