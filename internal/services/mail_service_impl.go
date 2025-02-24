@@ -3,21 +3,35 @@ package services
 import (
 	"errors"
 	"github.com/goccy/go-json"
+	amqp "github.com/rabbitmq/amqp091-go"
 	gomail "gopkg.in/mail.v2"
 	"log"
 	"webapp/internal/infrastructure/rabbitMq"
 )
 
+const (
+	WORKERS = 5
+)
+
+type EmailTask struct {
+	EmailRequest EmailRequest
+	Delivery     amqp.Delivery
+}
+
 type MailService struct {
-	dialer *gomail.Dialer
-	rabbit *rabbitMq.RabbitMq
+	dialer      *gomail.Dialer
+	rabbit      *rabbitMq.RabbitMq
+	taskChannel chan EmailTask
 }
 
 func NewMailService(dialer *gomail.Dialer, rabbitClient *rabbitMq.RabbitMq) MailServiceInterface {
-	return &MailService{
-		dialer: dialer,
-		rabbit: rabbitClient,
+	ms := &MailService{
+		taskChannel: make(chan EmailTask, WORKERS),
+		dialer:      dialer,
+		rabbit:      rabbitClient,
 	}
+	ms.startWorkers()
+	return ms
 }
 
 func (m MailService) SendMail(to string, subject string, body string) error {
@@ -54,15 +68,37 @@ func (m MailService) SendMailWithQueue() error {
 				continue
 			}
 
-			if err := m.SendMail(emailMessage.Email, emailMessage.Subject, emailMessage.Body); err != nil {
-				log.Println("Error sending email: ", err)
-			}
-
-			err := d.Ack(true)
-			if err != nil {
-				return
+			m.taskChannel <- EmailTask{
+				EmailRequest: emailMessage,
+				Delivery:     d,
 			}
 		}
 	}()
 	return nil
+}
+
+func (m MailService) startWorkers() {
+	for i := 0; i < WORKERS; i++ {
+		go m.worker(i)
+	}
+}
+
+func (m MailService) worker(workerId int) {
+	for task := range m.taskChannel {
+		// Process the email task
+		err := m.SendMail(
+			task.EmailRequest.Email,
+			task.EmailRequest.Subject,
+			task.EmailRequest.Body,
+		)
+		if err != nil {
+			log.Printf("Failed to send email to %s: %v", task.EmailRequest.Email, err)
+			// Requeue the task on failure (optional)
+			_ = task.Delivery.Nack(false, true)
+		} else {
+			// Acknowledge the message on success
+			log.Printf("Worker %d sent email to %s", workerId, task.EmailRequest.Email)
+			_ = task.Delivery.Ack(false)
+		}
+	}
 }
