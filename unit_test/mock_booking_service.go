@@ -48,7 +48,7 @@ func (m *MockBookingService) Scheduler() error {
 	panic("implement me")
 }
 
-func (m *MockBookingService) SendNotiEmail(subject string, toEmail string, body string) error {
+func (m *MockBookingService) SendNotiEmail([]request_models.TestingEmailFormat) error {
 	//TODO implement me
 	panic("implement me")
 }
