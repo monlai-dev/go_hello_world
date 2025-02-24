@@ -118,6 +118,8 @@ func (b BookingService) publishMessage(workerId int, wg *sync.WaitGroup) {
 				log.Println("Error publishing email request: ", rabbitErr)
 				log.Printf("workerId %d failed to send data", workerId)
 			}
+
+			wg.Done()
 		}
 	}
 }
@@ -414,15 +416,9 @@ func (b BookingService) SendNotiEmail(list []request_models.TestingEmailFormat) 
 			Body:    val.Body,
 		}
 
-		select {
-		case b.messageChannel <- emailRequest:
-		case <-time.After(1 * time.Minute): // Timeout to prevent blocking
-			log.Println("SendNotiEmail: messageChannel is full, dropping email")
-			return errors.New("messageChannel is full")
-		}
+		b.messageChannel <- emailRequest
 	}
 
-	close(b.messageChannel)
 	b.wg.Wait()
 	return nil
 }
