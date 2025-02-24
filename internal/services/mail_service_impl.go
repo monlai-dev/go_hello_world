@@ -6,11 +6,9 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	gomail "gopkg.in/mail.v2"
 	"log"
+	"os"
+	"strconv"
 	"webapp/internal/infrastructure/rabbitMq"
-)
-
-const (
-	WORKERS = 5
 )
 
 type EmailTask struct {
@@ -22,13 +20,17 @@ type MailService struct {
 	dialer      *gomail.Dialer
 	rabbit      *rabbitMq.RabbitMq
 	taskChannel chan EmailTask
+	workersPool int
 }
 
 func NewMailService(dialer *gomail.Dialer, rabbitClient *rabbitMq.RabbitMq) MailServiceInterface {
+	workers, _ := strconv.Atoi(os.Getenv("WORKERS_POOL"))
+
 	ms := &MailService{
-		taskChannel: make(chan EmailTask, WORKERS),
+		taskChannel: make(chan EmailTask, workers),
 		dialer:      dialer,
 		rabbit:      rabbitClient,
+		workersPool: workers,
 	}
 	ms.startWorkers()
 	return ms
@@ -78,7 +80,7 @@ func (m MailService) SendMailWithQueue() error {
 }
 
 func (m MailService) startWorkers() {
-	for i := 0; i < WORKERS; i++ {
+	for i := 0; i < m.workersPool; i++ {
 		go m.worker(i)
 	}
 }
