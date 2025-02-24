@@ -10,7 +10,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 	"log"
-	"sync"
 	"time"
 	"webapp/internal/infrastructure/rabbitMq"
 	models "webapp/internal/models/db_models"
@@ -40,14 +39,9 @@ type BookingService struct {
 	cronJobService    *CronJobService
 	accountService    AccountServiceInterface
 	rabbitClient      *rabbitMq.RabbitMq
-	messageChannel    chan EmailRequest
-	wg                *sync.WaitGroup
-	ctx               context.Context
-	cancelFunc        context.CancelFunc
 }
 
 func NewBookingService(
-
 	bookingRepository repositories.BookingRepositoryInterface,
 	movieService MovieServiceInterface,
 	bookedSeatService BookedSeatServiceInterface,
@@ -57,12 +51,8 @@ func NewBookingService(
 	cronjobService *CronJobService,
 	accountService AccountServiceInterface,
 	rabbitClient *rabbitMq.RabbitMq,
-
 ) BookingServiceInterface {
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	bs := &BookingService{
+	return &BookingService{
 		bookingRepository: bookingRepository,
 		movieService:      movieService,
 		bookedSeatService: bookedSeatService,
@@ -72,55 +62,6 @@ func NewBookingService(
 		cronJobService:    cronjobService,
 		accountService:    accountService,
 		rabbitClient:      rabbitClient,
-		messageChannel:    make(chan EmailRequest, 20),
-		wg:                &sync.WaitGroup{},
-		ctx:               ctx,
-		cancelFunc:        cancel,
-	}
-	bs.startChannel(bs.wg)
-	return bs
-}
-
-func (b BookingService) startChannel(group *sync.WaitGroup) {
-	for i := 0; i < 10; i++ {
-		group.Add(1)
-		go b.publishMessage(i, group)
-	}
-}
-
-func (b BookingService) publishMessage(workerId int, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	for {
-		select {
-		case <-b.ctx.Done(): // Check if context is canceled, exit worker
-			log.Printf("Worker %d shutting down\n", workerId)
-			return
-		case tasks, ok := <-b.messageChannel:
-			if !ok {
-				log.Printf("Worker %d: message channel closed\n", workerId)
-				return
-			}
-
-			jsonBody, err := json.Marshal(tasks)
-			if err != nil {
-				log.Println("Error marshalling email request: ", err)
-				continue
-			}
-
-			rabbitErr := b.rabbitClient.Publish(b.rabbitClient, "email_exchange", "email", amqp.Publishing{
-				ContentType:  "text/html",
-				Body:         jsonBody,
-				DeliveryMode: amqp.Persistent,
-			})
-
-			if rabbitErr != nil {
-				log.Println("Error publishing email request: ", rabbitErr)
-				log.Printf("workerId %d failed to send data", workerId)
-			}
-
-			wg.Done()
-		}
 	}
 }
 
@@ -200,7 +141,7 @@ func (b BookingService) GetBookingByID(bookingID int) (models.Booking, error) {
 
 	if err != nil {
 		log.Printf("error fetching booking with ID %d: %v", bookingID, err)
-		return models.Booking{}, fmt.Errorf("booking with id %d not found ", bookingID)
+		return models.Booking{}, fmt.Errorf("error fetching booking: %w", err)
 	}
 
 	return booking, nil
@@ -407,18 +348,30 @@ func removeBookingFromCache(bookingID int, redisClient *redis.Client) error {
 	return nil
 }
 
-func (b BookingService) SendNotiEmail(list []request_models.TestingEmailFormat) error {
+func (b BookingService) SendNotiEmail(data []request_models.TestingEmailFormat) error {
 
-	for _, val := range list {
-		emailRequest := EmailRequest{
-			Subject: val.Subject,
-			Email:   val.Email,
-			Body:    val.Body,
-		}
-
-		b.messageChannel <- emailRequest
+	emailRequest := EmailRequest{
+		Subject: data[0].Subject,
+		Email:   data[0].Email,
+		Body:    data[0].Body,
 	}
 
-	b.wg.Wait()
+	jsonBody, err := json.Marshal(emailRequest)
+	if err != nil {
+		log.Println("Error marshalling email request: ", err)
+		return errors.New("error marshalling email request")
+	}
+
+	rabbitErr := b.rabbitClient.Publish(b.rabbitClient, "email_exchange", "email", amqp.Publishing{
+		ContentType:  "text/html",
+		Body:         jsonBody,
+		DeliveryMode: amqp.Persistent,
+	})
+
+	if rabbitErr != nil {
+		log.Println("Error publishing email request: ", rabbitErr)
+		return errors.New("error publishing email request")
+	}
+
 	return nil
 }
