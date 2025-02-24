@@ -422,6 +422,7 @@ func (b BookingService) SendNotiEmail(list []request_models.TestingEmailFormat) 
 		}
 	}
 
+	close(b.messageChannel)
 	b.wg.Wait()
 	return nil
 }
