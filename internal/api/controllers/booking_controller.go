@@ -70,13 +70,13 @@ func ConfirmBookingHandler(bookingService services.BookingServiceInterface) gin.
 
 func TestingRabbitMq(bookingService services.BookingServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var request BookingTestingRequest
+		var request []request_models.TestingEmailFormat
 		if err := c.ShouldBindJSON(&request); err != nil {
 			c.JSON(http.StatusBadRequest, responseError(err.Error()))
 			return
 		}
 
-		err := bookingService.SendNotiEmail(request.Subject, request.Email, request.Body)
+		err := bookingService.SendNotiEmail(request)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, responseError(err.Error()))
 			return
