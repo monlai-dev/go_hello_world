@@ -11,12 +11,13 @@ import (
 
 func init() {
 	err := godotenv.Load()
-	database.ConnectDb()
-	cache.ConnectRedis()
-	database.DB.AutoMigrate(&models.Account{}, &models.Address{}, &models.Theater{}, &models.Movie{}, &models.Room{}, &models.Slot{}, &models.Seat{}, &models.BookedSeat{}, &models.Booking{})
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+	database.ConnectDb()
+	cache.ConnectRedis()
+	database.DB.AutoMigrate(&models.Account{}, &models.Address{}, &models.Theater{}, &models.Movie{}, &models.Room{}, &models.Slot{}, &models.Seat{}, &models.BookedSeat{}, &models.Booking{})
+
 }
 
 // @title Swagger Example API
