@@ -348,12 +348,12 @@ func removeBookingFromCache(bookingID int, redisClient *redis.Client) error {
 	return nil
 }
 
-func (b BookingService) SendNotiEmail(data []request_models.TestingEmailFormat) error {
+func (b BookingService) SendNotiEmail(data request_models.TestingEmailFormat) error {
 
 	emailRequest := EmailRequest{
-		Subject: data[0].Subject,
-		Email:   data[0].Email,
-		Body:    data[0].Body,
+		Subject: data.Subject,
+		Email:   data.Email,
+		Body:    data.Body,
 	}
 
 	jsonBody, err := json.Marshal(emailRequest)
