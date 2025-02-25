@@ -41,8 +41,10 @@ func NewMailService(dialer *gomail.Dialer, rabbitClient *rabbitMq.RabbitMq) Mail
 		ctx:         ctx,
 		cancel:      cancel,
 	}
+
+	// Start workers in a goroutine to avoid blocking the constructor
 	go func() {
-		ms.startWorkers()
+		ms.startWorkers() // Launch the worker pool
 	}()
 
 	return ms
@@ -82,9 +84,10 @@ func (m MailService) SendMailWithQueue() error {
 				continue
 			}
 
+			// Send the task to the worker pool via taskChannel
 			m.taskChannel <- EmailTask{
-				EmailRequest: emailMessage,
-				Delivery:     d,
+				EmailRequest: emailMessage, // Email details
+				Delivery:     d,            // RabbitMQ delivery for ack/nack
 			}
 		}
 	}()
@@ -105,6 +108,7 @@ func (m MailService) worker(workerId int) {
 
 	defer m.wg.Done()
 
+	// Infinite loop to keep worker alive for multiple tasks
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -113,7 +117,7 @@ func (m MailService) worker(workerId int) {
 		case task, ok := <-m.taskChannel:
 			if !ok {
 				log.Printf("Worker %d stopped: task channel closed", workerId)
-				return
+				return // Exit worker if channel is closed
 			}
 			// Process the email task
 			err := m.SendMail(
