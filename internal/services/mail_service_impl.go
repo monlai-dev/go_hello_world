@@ -105,27 +105,29 @@ func (m MailService) worker(workerId int) {
 
 	defer m.wg.Done()
 
-	select {
-	case <-m.ctx.Done():
-		return
-	case task, ok := <-m.taskChannel:
-		if !ok {
+	for {
+		select {
+		case <-m.ctx.Done():
+			log.Printf("Worker %d stopped due to context cancellation", workerId)
 			return
-		}
-		// Process the email task
-		err := m.SendMail(
-			task.EmailRequest.Email,
-			task.EmailRequest.Subject,
-			task.EmailRequest.Body,
-		)
-		if err != nil {
-			log.Printf("Failed to send email to %s: %v", task.EmailRequest.Email, err)
-			// Requeue the task on failure (optional)
-			_ = task.Delivery.Nack(false, true)
-		} else {
-			// Acknowledge the message on success
-			log.Printf("Worker %d sent email to %s", workerId, task.EmailRequest.Email)
-			_ = task.Delivery.Ack(false)
+		case task, ok := <-m.taskChannel:
+			if !ok {
+				log.Printf("Worker %d stopped: task channel closed", workerId)
+				return
+			}
+			// Process the email task
+			err := m.SendMail(
+				task.EmailRequest.Email,
+				task.EmailRequest.Subject,
+				task.EmailRequest.Body,
+			)
+			if err != nil {
+				log.Printf("Worker %d failed to send email to %s: %v", workerId, task.EmailRequest.Email, err)
+				_ = task.Delivery.Nack(false, true)
+			} else {
+				log.Printf("Worker %d sent email to %s", workerId, task.EmailRequest.Email)
+				_ = task.Delivery.Ack(false)
+			}
 		}
 	}
 }
