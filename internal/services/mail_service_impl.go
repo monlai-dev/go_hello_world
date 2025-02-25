@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"github.com/goccy/go-json"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -8,6 +9,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"sync"
 	"webapp/internal/infrastructure/rabbitMq"
 )
 
@@ -20,19 +22,29 @@ type MailService struct {
 	dialer      *gomail.Dialer
 	rabbit      *rabbitMq.RabbitMq
 	taskChannel chan EmailTask
-	workersPool int
+	bufferPool  int
+	wg          *sync.WaitGroup
+	ctx         context.Context // Added for lifecycle management
+	cancel      context.CancelFunc
 }
 
 func NewMailService(dialer *gomail.Dialer, rabbitClient *rabbitMq.RabbitMq) MailServiceInterface {
 	workers, _ := strconv.Atoi(os.Getenv("WORKERS_POOL"))
+	ctx, cancel := context.WithCancel(context.Background())
 
 	ms := &MailService{
 		taskChannel: make(chan EmailTask, workers),
 		dialer:      dialer,
 		rabbit:      rabbitClient,
-		workersPool: workers,
+		bufferPool:  workers,
+		wg:          &sync.WaitGroup{},
+		ctx:         ctx,
+		cancel:      cancel,
 	}
-	ms.startWorkers()
+	go func() {
+		ms.startWorkers()
+	}()
+
 	return ms
 }
 
@@ -80,13 +92,26 @@ func (m MailService) SendMailWithQueue() error {
 }
 
 func (m MailService) startWorkers() {
-	for i := 0; i < m.workersPool; i++ {
+	// only 5 workers are allowed to process the email tasks concurrently
+	for i := 0; i < 5; i++ {
+		m.wg.Add(1)
 		go m.worker(i)
 	}
+	m.wg.Wait()
+	log.Printf("All workers have stopped")
 }
 
 func (m MailService) worker(workerId int) {
-	for task := range m.taskChannel {
+
+	defer m.wg.Done()
+
+	select {
+	case <-m.ctx.Done():
+		return
+	case task, ok := <-m.taskChannel:
+		if !ok {
+			return
+		}
 		// Process the email task
 		err := m.SendMail(
 			task.EmailRequest.Email,
