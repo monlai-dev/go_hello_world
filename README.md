@@ -1,7 +1,7 @@
 # Cinema Ticket Booking System 🎬
 
 A full-featured cinema ticket booking system built with Golang, featuring real-time seat availability updates and payment integration.
-🌐 https://app-lastest.onrender.com
+🌐 [https://app-lastest.onrender.com](https://go-hello-world.up.railway.app/)
 
 ## Features ✨
 
