@@ -23,6 +23,12 @@ func init() {
 
 func ConnectRedis() *redis.Client {
 
+	if os.Getenv("ENV") == "staging" {
+		redisKey = os.Getenv("RENDER_REDIS_URL")
+	} else {
+		redisKey = os.Getenv("REDIS_URL")
+	}
+
 	opt, err := redis.ParseURL(redisKey)
 	if err != nil {
 		panic(err)
