@@ -9,5 +9,6 @@ import (
 var Module = fx.Provide(provideRedisClient)
 
 func provideRedisClient() *redis.Client {
+
 	return cache.ConnectRedis()
 }

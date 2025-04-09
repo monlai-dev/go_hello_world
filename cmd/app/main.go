@@ -95,7 +95,7 @@ func StartServer(lc fx.Lifecycle, engine *gin.Engine) {
 		OnStart: func(ctx context.Context) error {
 			go func() {
 				log.Println("Starting HTTP server at ${PORT}")
-				if err := engine.Run(os.Getenv("PORT")); err != nil {
+				if err := engine.Run(":" + os.Getenv("PORT")); err != nil {
 					log.Fatalf("Failed to start server: %v", err)
 				}
 			}()
