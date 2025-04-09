@@ -2,11 +2,31 @@
 package main
 
 import (
+	"context"
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"go.uber.org/fx"
 	"log"
+	"os"
+	"webapp/cmd/fx/accountfx"
+	"webapp/cmd/fx/addressfx"
+	"webapp/cmd/fx/bookedseatfx"
+	"webapp/cmd/fx/bookingfx"
+	"webapp/cmd/fx/cronjobfx"
+	"webapp/cmd/fx/dbfx"
+	"webapp/cmd/fx/mailfx"
+	"webapp/cmd/fx/moviefx"
+	"webapp/cmd/fx/paymentfx"
+	"webapp/cmd/fx/rabbitmqfx"
+	"webapp/cmd/fx/redisfx"
+	"webapp/cmd/fx/roomfx"
+	"webapp/cmd/fx/seatfx"
+	"webapp/cmd/fx/slotfx"
+	"webapp/cmd/fx/theaterfx"
 	"webapp/internal/infrastructure/cache"
 	"webapp/internal/infrastructure/database"
 	models "webapp/internal/models/db_models"
+	"webapp/internal/services"
 )
 
 func init() {
@@ -37,12 +57,95 @@ func init() {
 
 func main() {
 
-	r, err := InitializeApp()
-	if err != nil {
-		log.Fatalf("failed to initialize app: %v", err)
-	}
-	if err := r.Run(); err != nil {
-		log.Fatalf("failed to start server: %v", err)
-	}
+	app := fx.New(
+		// Register all modules here
+		dbfx.Module,
+		redisfx.Module,
+		addressfx.Module,
+		theaterfx.Module,
+		roomfx.Module,
+		accountfx.Module,
+		moviefx.Module,
+		slotfx.Module,
+		seatfx.Module,
+		bookedseatfx.Module,
+		cronjobfx.Module,
+		rabbitmqfx.Module,
+		mailfx.Module,
+		bookingfx.Module,
+		paymentfx.Module,
 
+		// Register your router
+		fx.Provide(ProvideRouter),
+
+		// Start the HTTP server
+		fx.Invoke(StartServer),
+		fx.Invoke(StartCronJob),
+		fx.Invoke(ConsumeMail),
+	)
+
+	app.Run()
+
+}
+
+func StartServer(lc fx.Lifecycle, engine *gin.Engine) {
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			go func() {
+				log.Println("Starting HTTP server at ${PORT}")
+				if err := engine.Run(os.Getenv("PORT")); err != nil {
+					log.Fatalf("Failed to start server: %v", err)
+				}
+			}()
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			log.Println("Stopping HTTP server")
+			return nil
+		},
+	})
+}
+
+func StartCronJob(lc fx.Lifecycle, cronJobService *services.CronJobService, bookingServiceInterface services.BookingServiceInterface) {
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			log.Println("Starting cron job")
+
+			_, err := cronJobService.AddFunc("@every 1m", func() {
+				log.Printf("Running scheduler")
+				err := bookingServiceInterface.Scheduler()
+				if err != nil {
+					log.Printf("Error while running scheduler: %v", err)
+				}
+			})
+
+			if err != nil {
+				log.Printf("Error while adding cron job: %v", err)
+			}
+			cronJobService.StartCronJob()
+			// Add cron job
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			log.Println("Stopping cron job")
+
+			return nil
+		},
+	})
+}
+
+func ConsumeMail(lc fx.Lifecycle, mailService *services.MailService) {
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			log.Println("Starting mail consumer")
+			if consumeErr := mailService.SendMailWithQueue(); consumeErr != nil {
+				log.Fatalf("Error consuming message: %v", consumeErr)
+			}
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			log.Println("Stopping mail consumer")
+			return nil
+		},
+	})
 }

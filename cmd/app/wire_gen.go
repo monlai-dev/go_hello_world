@@ -28,6 +28,8 @@ import (
 // Injectors from wire.go:
 
 func InitializeApp() (*gin.Engine, error) {
+
+
 	db := database.ConnectDb()
 	client := cache.ConnectRedis()
 
