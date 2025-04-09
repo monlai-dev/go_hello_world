@@ -23,6 +23,7 @@ import (
 	"webapp/cmd/fx/seatfx"
 	"webapp/cmd/fx/slotfx"
 	"webapp/cmd/fx/theaterfx"
+	"webapp/cmd/fx/websocketfx"
 	"webapp/internal/infrastructure/cache"
 	"webapp/internal/infrastructure/database"
 	models "webapp/internal/models/db_models"
@@ -74,6 +75,7 @@ func main() {
 		mailfx.Module,
 		bookingfx.Module,
 		paymentfx.Module,
+		websocketfx.Module,
 
 		// Register your router
 		fx.Provide(ProvideRouter),
