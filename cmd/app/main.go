@@ -136,7 +136,7 @@ func StartCronJob(lc fx.Lifecycle, cronJobService *services.CronJobService, book
 	})
 }
 
-func ConsumeMail(lc fx.Lifecycle, mailService *services.MailService) {
+func ConsumeMail(lc fx.Lifecycle, mailService services.MailServiceInterface) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			log.Println("Starting mail consumer")
