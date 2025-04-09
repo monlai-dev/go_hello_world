@@ -24,12 +24,6 @@ func init() {
 
 func ConnectDb() *gorm.DB {
 
-	if os.Getenv("ENV") == "staging" {
-		dataBaseUrl = os.Getenv("RENDER_DATABASE_URL")
-	} else {
-		dataBaseUrl = os.Getenv("DATABASE_URL")
-	}
-
 	var err error
 	dsn := dataBaseUrl
 
