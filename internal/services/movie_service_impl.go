@@ -25,7 +25,7 @@ type MovieService struct {
 
 func NewMovieService(movieRepository repositories.MovieRepositoryInterface,
 	client *redis.Client) MovieServiceInterface {
-	return MovieService{
+	return &MovieService{
 		movieRepository: movieRepository,
 		redisClient:     client,
 	}

@@ -15,7 +15,7 @@ type RoomService struct {
 }
 
 func NewRoomService(db *gorm.DB, roomRepository repositories.RoomRepositoryInterface, theaterService TheaterServiceInterface) RoomServiceInterface {
-	return RoomService{
+	return &RoomService{
 		db:             db,
 		roomRepository: roomRepository,
 		theaterService: theaterService,
