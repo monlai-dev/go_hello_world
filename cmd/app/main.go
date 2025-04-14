@@ -76,9 +76,9 @@ func main() {
 		bookingfx.Module,
 		paymentfx.Module,
 		websocketfx.Module,
-
+	
 		// Register your router
-		fx.Provide(ProvideRouter),
+		fx.In(ProvideRouter),
 
 		// Start the HTTP server
 		fx.Invoke(StartServer),
