@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/fx"
 	"log"
@@ -42,7 +43,7 @@ func init() {
 	database.ConnectDb()
 	cache.ConnectRedis()
 	database.DB.AutoMigrate(&models.Account{}, &models.Address{}, &models.Theater{}, &models.Movie{}, &models.Room{}, &models.Slot{}, &models.Seat{}, &models.BookedSeat{}, &models.Booking{})
-
+	prometheus.MustRegister(prometheus.NewGoCollector())
 }
 
 // @title Swagger Example API
