@@ -9,27 +9,22 @@ import (
 var RedisClient *redis.Client
 var ctx = context.Background()
 
-var redisKey string
+var redisKey *string
 
-func init() {
+func InitRedis() {
+	var url string
 	if os.Getenv("ENV") == "staging" {
-		redisKey = os.Getenv("RENDER_REDIS_URL")
+		url = os.Getenv("RENDER_REDIS_URL")
+		redisKey = &url
 		return
 	}
-
-	redisKey = os.Getenv("REDIS_URL")
-
+	url = os.Getenv("REDIS_URL")
+	redisKey = &url
 }
 
 func ConnectRedis() *redis.Client {
 
-	if os.Getenv("ENV") == "staging" {
-		redisKey = os.Getenv("RENDER_REDIS_URL")
-	} else {
-		redisKey = os.Getenv("REDIS_URL")
-	}
-
-	opt, err := redis.ParseURL(redisKey)
+	opt, err := redis.ParseURL(*redisKey)
 	if err != nil {
 		panic(err)
 	}

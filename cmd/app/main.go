@@ -31,19 +31,18 @@ import (
 	"webapp/internal/infrastructure/cache"
 	"webapp/internal/infrastructure/database"
 	"webapp/internal/infrastructure/rabbitMq"
-	models "webapp/internal/models/db_models"
 	"webapp/internal/services"
 )
 
 func init() {
-	err := godotenv.Load()
+	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	database.ConnectDb()
-	cache.ConnectRedis()
-	database.DB.AutoMigrate(&models.Account{}, &models.Address{}, &models.Theater{}, &models.Movie{}, &models.Room{}, &models.Slot{}, &models.Seat{}, &models.BookedSeat{}, &models.Booking{})
-	prometheus.MustRegister(prometheus.NewGoCollector())
+	//database.ConnectDb()
+	//cache.ConnectRedis()
+	//database.DB.AutoMigrate(&models.Account{}, &models.Address{}, &models.Theater{}, &models.Movie{}, &models.Room{}, &models.Slot{}, &models.Seat{}, &models.BookedSeat{}, &models.Booking{})
+	prometheus.MustRegister()
 }
 
 // @title Swagger Example API
@@ -65,6 +64,10 @@ func main() {
 
 	app := fx.New(
 		// Register all modules here
+		fx.Invoke(database.InitPostgres),
+		fx.Invoke(cache.InitRedis),
+		fx.Invoke(database.ConnectDb),
+		fx.Invoke(cache.ConnectRedis),
 		dbfx.Module,
 		redisfx.Module,
 		addressfx.Module,
