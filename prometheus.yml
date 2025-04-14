@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 60s
+remote_write:
+  - url: https://prometheus-prod-37-prod-ap-southeast-1.grafana.net/api/prom/push
+    basic_auth:
+      username: 2380733
+      password: glc_eyJvIjoiMTQwMjkxOCIsIm4iOiJzdGFjay0xMjI4MjQ3LWFsbG95LW5ld3Rva2VuIiwiayI6IjgzUzdMaDNDNExRMUlwMVFTdzZETTF4MiIsIm0iOnsiciI6InByb2QtYXAtc291dGhlYXN0LTEifX0=
+scrape_configs:
+  - job_name: node
+    static_configs:
+      - targets: ["https://go-hello-world.up.railway.app/metrics:3000"]

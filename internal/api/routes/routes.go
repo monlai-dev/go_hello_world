@@ -96,7 +96,5 @@ func RegisterRoutes(r *gin.Engine,
 		c.JSON(http.StatusOK, gin.H{"message": "pong"})
 	})
 
-	r.GET("/metrics", func(c *gin.Context) {
-		promhttp.Handler().ServeHTTP(c.Writer, c.Request)
-	})
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 }
