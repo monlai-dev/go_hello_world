@@ -162,7 +162,7 @@ func ConsumeMail(lc fx.Lifecycle, mailService services.MailServiceInterface) {
 }
 
 func ProvideRouter(
-	accountController controllers.AccountController,
+	accountController *controllers.AccountController,
 	socketService *services.WebsocketService,
 ) *gin.Engine {
 	log.Println("ProvideRouter called, initializing gin.Engine")
@@ -175,7 +175,7 @@ func ProvideRouter(
 	socketService.AttachToRouter(r)
 
 	routes.RegisterRoutes(r,
-		accountController,
+		*accountController,
 	)
 	return r
 }
