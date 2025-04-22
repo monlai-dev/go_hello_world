@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/redis/go-redis/v9"
 	"go.uber.org/fx"
 	"log"
 	"os"
@@ -26,11 +25,12 @@ import (
 	"webapp/cmd/fx/slotfx"
 	"webapp/cmd/fx/theaterfx"
 	"webapp/cmd/fx/websocketfx"
+	"webapp/internal/api/controllers"
 	"webapp/internal/api/middleware"
 	"webapp/internal/api/routes"
 	"webapp/internal/infrastructure/cache"
 	"webapp/internal/infrastructure/database"
-	"webapp/internal/infrastructure/rabbitMq"
+
 	"webapp/internal/services"
 )
 
@@ -84,6 +84,7 @@ func main() {
 		bookingfx.Module,
 		paymentfx.Module,
 		websocketfx.Module,
+		controllers.Module,
 
 		// Register your router
 		fx.Provide(ProvideRouter),
@@ -161,17 +162,8 @@ func ConsumeMail(lc fx.Lifecycle, mailService services.MailServiceInterface) {
 }
 
 func ProvideRouter(
-	accountService services.AccountServiceInterface,
-	redisClient *redis.Client,
-	roomServiceInterface services.RoomServiceInterface,
-	theaterServiceInterface services.TheaterServiceInterface,
-	slotServiceInterface services.SlotServiceInterface,
-	movieService services.MovieServiceInterface,
-	bookingServiceInterface services.BookingServiceInterface,
-	seatServiceInterface services.SeatServiceInterface,
-	paymentService services.PaymentServiceInterface,
+	accountController controllers.AccountController,
 	socketService *services.WebsocketService,
-	rabbitClient *rabbitMq.RabbitMq,
 ) *gin.Engine {
 	log.Println("ProvideRouter called, initializing gin.Engine")
 	r := gin.Default()
@@ -183,16 +175,7 @@ func ProvideRouter(
 	socketService.AttachToRouter(r)
 
 	routes.RegisterRoutes(r,
-		accountService,
-		redisClient,
-		roomServiceInterface,
-		theaterServiceInterface,
-		slotServiceInterface,
-		movieService,
-		bookingServiceInterface,
-		seatServiceInterface,
-		paymentService,
-		socketService,
-		rabbitClient)
+		accountController,
+	)
 	return r
 }

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
+	"go.uber.org/fx"
 	"net/http"
 	"strconv"
 	"webapp/internal/models/request_models"
@@ -9,43 +10,55 @@ import (
 	"webapp/internal/services"
 )
 
-func LoginHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var req request_models.LoginRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
+var Module = fx.Provide(NewAccountController)
 
-		token, err := accountService.Login(req)
-		if err != nil {
-			c.JSON(http.StatusForbidden, responseError("Invalid email or password"))
-			return
-		}
+type AccountController struct {
+	accountService services.AccountServiceInterface
+}
 
-		c.JSON(http.StatusOK, responseSuccess("Login successful", []interface{}{gin.H{"token": token}}))
+func NewAccountController(accountService services.AccountServiceInterface) *AccountController {
+	return &AccountController{
+		accountService: accountService,
 	}
 }
 
-func RegisterHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var req request_models.RegisterRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
+func (ac *AccountController) LoginHandler(c *gin.Context) {
 
-		createdAccount, err := accountService.CreateAccount(req)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
-
-		c.JSON(http.StatusOK, responseSuccess("Account created successfully", []interface{}{createdAccount}))
+	var req request_models.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
+
+	token, err := ac.accountService.Login(req)
+	if err != nil {
+		c.JSON(http.StatusForbidden, responseError("Invalid email or password"))
+		return
+	}
+
+	c.JSON(http.StatusOK, responseSuccess("Login successful", []interface{}{gin.H{"token": token}}))
+
 }
 
-func ListAllAccountsHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
+func (ac *AccountController) RegisterHandler(c *gin.Context) {
+
+	var req request_models.RegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	createdAccount, err := ac.accountService.CreateAccount(req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, responseSuccess("Account created successfully", []interface{}{createdAccount}))
+
+}
+
+func (ac *AccountController) ListAllAccountsHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		page, _ := strconv.Atoi(c.Query("page"))
@@ -62,7 +75,7 @@ func ListAllAccountsHandler(accountService services.AccountServiceInterface) gin
 	}
 }
 
-func GetRandomAccountHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
+func (ac *AccountController) GetRandomAccountHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		account, err := accountService.GetRandomAccount()
 		if err != nil {
@@ -73,7 +86,7 @@ func GetRandomAccountHandler(accountService services.AccountServiceInterface) gi
 	}
 }
 
-func GetAccountByIDHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
+func (ac *AccountController) GetAccountByIDHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, _ := strconv.Atoi(c.Param("id"))
 		account, err := accountService.GetAccountById(id)
@@ -85,7 +98,7 @@ func GetAccountByIDHandler(accountService services.AccountServiceInterface) gin.
 	}
 }
 
-func GetHomelessAccountsHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
+func (ac *AccountController) GetHomelessAccountsHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		accounts, err := accountService.GetAllHomelessAccounts()
 		if err != nil {
@@ -96,7 +109,7 @@ func GetHomelessAccountsHandler(accountService services.AccountServiceInterface)
 	}
 }
 
-func UpdateAddressHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
+func (ac *AccountController) UpdateAddressHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		email, _ := c.Get("email")
 		var address request_models.AddressRequest
@@ -114,7 +127,7 @@ func UpdateAddressHandler(accountService services.AccountServiceInterface) gin.H
 	}
 }
 
-func LogoutHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
+func (ac *AccountController) LogoutHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		token := authHeader[7:] // Extract token from "Bearer <token>"
