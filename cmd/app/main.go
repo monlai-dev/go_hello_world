@@ -7,6 +7,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/fx"
+	"gorm.io/gorm"
 	"log"
 	"os"
 	"webapp/cmd/fx/accountfx"
@@ -30,6 +31,7 @@ import (
 	"webapp/internal/api/routes"
 	"webapp/internal/infrastructure/cache"
 	"webapp/internal/infrastructure/database"
+	models "webapp/internal/models/db_models"
 
 	"webapp/internal/services"
 )
@@ -41,7 +43,6 @@ func init() {
 	}
 	//database.ConnectDb()
 	//cache.ConnectRedis()
-	//database.DB.AutoMigrate(&models.Account{}, &models.Address{}, &models.Theater{}, &models.Movie{}, &models.Room{}, &models.Slot{}, &models.Seat{}, &models.BookedSeat{}, &models.Booking{})
 	prometheus.MustRegister()
 }
 
@@ -68,6 +69,7 @@ func main() {
 		fx.Invoke(cache.InitRedis),
 		fx.Invoke(database.ConnectDb),
 		fx.Invoke(cache.ConnectRedis),
+		fx.Invoke(MigrateDatabase),
 		dbfx.Module,
 		redisfx.Module,
 		addressfx.Module,
@@ -112,6 +114,31 @@ func StartServer(lc fx.Lifecycle, engine *gin.Engine) {
 		},
 		OnStop: func(ctx context.Context) error {
 			log.Println("Stopping HTTP server")
+			return nil
+		},
+	})
+}
+
+func MigrateDatabase(lc fx.Lifecycle, db *gorm.DB) {
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			log.Println("Running database migrations")
+			if err := db.AutoMigrate(&models.Account{},
+				&models.Address{},
+				&models.Theater{},
+				&models.Movie{},
+				&models.Room{},
+				&models.Slot{},
+				&models.Seat{},
+				&models.BookedSeat{},
+				&models.Booking{});
+				err != nil {
+				log.Fatalf("Failed to run migrations: %v", err)
+			}
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			log.Println("Stopping database migrations")
 			return nil
 		},
 	})
