@@ -7,6 +7,15 @@ import (
 	"webapp/internal/services"
 )
 
+type BookedSeatController struct {
+	bookedSeatService services.BookedSeatServiceInterface
+}
+
+func NewBookedSeatController(bookedSeatService services.BookedSeatServiceInterface) *BookedSeatController {
+	return &BookedSeatController{
+		bookedSeatService: bookedSeatService,
+	}
+}
 func GetBookedSeatsHandler(bookedSeatService services.BookedSeatServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 

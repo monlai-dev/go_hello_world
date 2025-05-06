@@ -18,58 +18,67 @@ type SlotResponse struct {
 	MovieId   int              `json:"movie_id"`
 }
 
-func CreateSlotHandler(slotService services.SlotServiceInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var req request_models.CreateSlotRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
+type SlotController struct {
+	SlotService services.SlotServiceInterface
+}
 
-		if err := validate.Struct(&req); err != nil {
-			c.JSON(http.StatusOK, responseError(err.Error()))
-			return
-		}
-
-		createdSlot, err := slotService.CreateSlot(req)
-		if err != nil {
-			c.JSON(http.StatusOK, responseError(err.Error()))
-			return
-		}
-
-		c.JSON(http.StatusOK, responseSuccess("Slot created successfully", []interface{}{SlotResponse{
-			ID:        int(createdSlot.ID),
-			StartTime: createdSlot.StartTime,
-			EndTime:   createdSlot.EndTime,
-			Price:     createdSlot.Price,
-			RoomId:    int(createdSlot.RoomID),
-			MovieId:   int(createdSlot.MovieID),
-		},
-		}))
+func NewSlotController(slotService services.SlotServiceInterface) *SlotController {
+	return &SlotController{
+		SlotService: slotService,
 	}
 }
 
-func GetAllSlotsByMovieIdHandler(slotService services.SlotServiceInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		movieId, _ := strconv.Atoi(c.Param("movieId"))
-		slots, err := slotService.FindAllSlotByMovieID(movieId, 1, 10)
-		if err != nil {
-			c.JSON(http.StatusOK, responseError(err.Error()))
-			return
-		}
+func (sc *SlotController) CreateSlotHandler(c *gin.Context) {
 
-		var slotResponses []SlotResponse
-		for _, slot := range slots {
-			slotResponses = append(slotResponses, SlotResponse{
-				ID:        int(slot.ID),
-				StartTime: slot.StartTime,
-				EndTime:   slot.EndTime,
-				Price:     slot.Price,
-				RoomId:    int(slot.RoomID),
-				MovieId:   int(slot.MovieID),
-			})
-		}
-
-		c.JSON(http.StatusOK, responseSuccess("Slots fetched successfully", []interface{}{slotResponses}))
+	var req request_models.CreateSlotRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
+		return
 	}
+
+	if err := validate.Struct(&req); err != nil {
+		c.JSON(http.StatusOK, responseError(err.Error()))
+		return
+	}
+
+	createdSlot, err := sc.SlotService.CreateSlot(req)
+	if err != nil {
+		c.JSON(http.StatusOK, responseError(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, responseSuccess("Slot created successfully", []interface{}{SlotResponse{
+		ID:        int(createdSlot.ID),
+		StartTime: createdSlot.StartTime,
+		EndTime:   createdSlot.EndTime,
+		Price:     createdSlot.Price,
+		RoomId:    int(createdSlot.RoomID),
+		MovieId:   int(createdSlot.MovieID),
+	},
+	}))
+
+}
+
+func (sc *SlotController) GetAllSlotsByMovieIdHandler(c *gin.Context) {
+
+	movieId, _ := strconv.Atoi(c.Param("movieId"))
+	slots, err := sc.SlotService.FindAllSlotByMovieID(movieId, 1, 10)
+	if err != nil {
+		c.JSON(http.StatusOK, responseError(err.Error()))
+	}
+
+	var slotResponses []SlotResponse
+	for _, slot := range slots {
+		slotResponses = append(slotResponses, SlotResponse{
+			ID:        int(slot.ID),
+			StartTime: slot.StartTime,
+			EndTime:   slot.EndTime,
+			Price:     slot.Price,
+			RoomId:    int(slot.RoomID),
+			MovieId:   int(slot.MovieID),
+		})
+	}
+
+	c.JSON(http.StatusOK, responseSuccess("Slots fetched successfully", []interface{}{slotResponses}))
+
 }

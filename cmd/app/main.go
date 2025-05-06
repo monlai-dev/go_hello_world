@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/fx"
 	"gorm.io/gorm"
 	"log"
@@ -131,8 +132,7 @@ func MigrateDatabase(lc fx.Lifecycle, db *gorm.DB) {
 				&models.Slot{},
 				&models.Seat{},
 				&models.BookedSeat{},
-				&models.Booking{});
-				err != nil {
+				&models.Booking{}); err != nil {
 				log.Fatalf("Failed to run migrations: %v", err)
 			}
 			return nil
@@ -190,7 +190,16 @@ func ConsumeMail(lc fx.Lifecycle, mailService services.MailServiceInterface) {
 
 func ProvideRouter(
 	accountController *controllers.AccountController,
+	bookedSeatController *controllers.BookedSeatController,
+	bookingController *controllers.BookingController,
+	theaterController *controllers.TheaterController,
+	roomController *controllers.RoomController,
+	movieController *controllers.MovieController,
+	slotController *controllers.SlotController,
+	seatController *controllers.SeatController,
 	socketService *services.WebsocketService,
+	webHookController *controllers.WebHookController,
+	redis *redis.Client,
 ) *gin.Engine {
 	log.Println("ProvideRouter called, initializing gin.Engine")
 	r := gin.Default()
@@ -203,6 +212,15 @@ func ProvideRouter(
 
 	routes.RegisterRoutes(r,
 		*accountController,
+		*bookedSeatController,
+		*bookingController,
+		*theaterController,
+		*roomController,
+		*movieController,
+		*slotController,
+		*seatController,
+		*webHookController,
+		redis,
 	)
 	return r
 }

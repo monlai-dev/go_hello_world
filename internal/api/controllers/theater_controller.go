@@ -7,33 +7,42 @@ import (
 	"webapp/internal/services"
 )
 
-func CreateTheaterHandler(theaterService services.TheaterServiceInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var req request_models.TheaterRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
+type TheaterController struct {
+	theaterService services.TheaterServiceInterface
+}
 
-		createdTheater, err := theaterService.CreateTheater(req)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
-
-		c.JSON(http.StatusOK, responseSuccess("Theater created successfully", []interface{}{createdTheater}))
+func NewTheaterController(theaterService services.TheaterServiceInterface) *TheaterController {
+	return &TheaterController{
+		theaterService: theaterService,
 	}
 }
 
-func GetAllTheatersHandler(theaterService services.TheaterServiceInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		theaters, err := theaterService.GetAllTheaters()
+func (tc *TheaterController) CreateTheaterHandler(c *gin.Context) {
 
-		if err != nil {
-			c.JSON(http.StatusBadRequest, responseError("Error getting theaters"))
-			return
-		}
-
-		c.JSON(http.StatusOK, responseSuccess("Theaters retrieved successfully", []interface{}{theaters}))
+	var req request_models.TheaterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
+		return
 	}
+
+	createdTheater, err := tc.theaterService.CreateTheater(req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, responseSuccess("Theater created successfully", []interface{}{createdTheater}))
+}
+
+func (tc *TheaterController) GetAllTheatersHandler(c *gin.Context) {
+
+	theaters, err := tc.theaterService.GetAllTheaters()
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responseError("Error getting theaters"))
+		return
+	}
+
+	c.JSON(http.StatusOK, responseSuccess("Theaters retrieved successfully", []interface{}{theaters}))
+	
 }

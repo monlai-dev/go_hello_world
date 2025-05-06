@@ -22,66 +22,76 @@ type BookingTestingRequest struct {
 	Subject string `json:"subject"`
 }
 
-func CreateBookingHandler(bookingService services.BookingServiceInterface, rabbitClient *rabbitMq.RabbitMq) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var request request_models.CreateBookingRequest
-		if err := c.ShouldBindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
+type BookingController struct {
+	BookingService services.BookingServiceInterface
+	RabbitClient   *rabbitMq.RabbitMq
+}
 
-		if err := request.Validate(); err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
-
-		booking, err := bookingService.CreateBooking(request, c.GetString("email"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
-
-		c.JSON(http.StatusCreated, responseSuccess("Booking created successfully", []interface{}{BookingResponse{
-			ID:         int(booking.ID),
-			SlotID:     int(booking.SlotID),
-			Status:     booking.IsBooked,
-			TotalPrice: booking.TotalPrice,
-		}}))
+func NewBookingController(bookingService services.BookingServiceInterface, rabbitClient *rabbitMq.RabbitMq) *BookingController {
+	return &BookingController{
+		BookingService: bookingService,
+		RabbitClient:   rabbitClient,
 	}
 }
 
-func ConfirmBookingHandler(bookingService services.BookingServiceInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		bookingID, err := strconv.Atoi(c.Param("bookingID"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, responseError("Invalid booking ID"))
-			return
-		}
+func (bc *BookingController) CreateBookingHandler(c *gin.Context) {
 
-		err = bookingService.ConfirmBookingByID(bookingID)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
-
-		c.JSON(http.StatusOK, responseSuccess("Booking confirmed successfully", nil))
+	var request request_models.CreateBookingRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
+		return
 	}
+
+	if err := request.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
+		return
+	}
+
+	booking, err := bc.BookingService.CreateBooking(request, c.GetString("email"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusCreated, responseSuccess("Booking created successfully", []interface{}{BookingResponse{
+		ID:         int(booking.ID),
+		SlotID:     int(booking.SlotID),
+		Status:     booking.IsBooked,
+		TotalPrice: booking.TotalPrice,
+	}}))
 }
 
-func TestingRabbitMq(bookingService services.BookingServiceInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var request request_models.TestingEmailFormat
-		if err := c.ShouldBindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
+func (bc *BookingController) ConfirmBookingHandler(c *gin.Context) {
 
-		err := bookingService.SendNotiEmail(request)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
-
-		c.JSON(http.StatusOK, responseSuccess("RabbitMQ testing successfully", nil))
+	bookingID, err := strconv.Atoi(c.Param("bookingID"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responseError("Invalid booking ID"))
+		return
 	}
+
+	err = bc.BookingService.ConfirmBookingByID(bookingID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, responseSuccess("Booking confirmed successfully", nil))
+}
+
+func (bc *BookingController) TestingRabbitMq(c *gin.Context) {
+
+	var request request_models.TestingEmailFormat
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
+		return
+	}
+
+	err := bc.BookingService.SendNotiEmail(request)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, responseSuccess("RabbitMQ testing successfully", nil))
+
 }

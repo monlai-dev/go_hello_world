@@ -2,15 +2,12 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"go.uber.org/fx"
 	"net/http"
 	"strconv"
 	"webapp/internal/models/request_models"
 	"webapp/internal/models/response_models"
 	"webapp/internal/services"
 )
-
-var Module = fx.Provide(NewAccountController)
 
 type AccountController struct {
 	accountService services.AccountServiceInterface
@@ -58,13 +55,13 @@ func (ac *AccountController) RegisterHandler(c *gin.Context) {
 
 }
 
-func (ac *AccountController) ListAllAccountsHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
+func (ac *AccountController) ListAllAccountsHandler(c *gin.Context) {
+	{
 
 		page, _ := strconv.Atoi(c.Query("page"))
 		pageSize, _ := strconv.Atoi(c.Query("pageSize"))
 
-		accounts, err := accountService.GetAllAccounts(page, pageSize)
+		accounts, err := ac.accountService.GetAllAccounts(page, pageSize)
 
 		if err != nil {
 			c.JSON(http.StatusBadRequest, responseError("Error getting accounts"))
@@ -75,38 +72,36 @@ func (ac *AccountController) ListAllAccountsHandler(accountService services.Acco
 	}
 }
 
-func (ac *AccountController) GetRandomAccountHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		account, err := accountService.GetRandomAccount()
-		if err != nil {
-			c.JSON(http.StatusBadRequest, responseError("Error getting account"))
-			return
-		}
-		c.JSON(http.StatusOK, responseSuccess("Account retrieved successfully", []interface{}{account}))
+func (ac *AccountController) GetRandomAccountHandler(c *gin.Context) {
+
+	account, err := ac.accountService.GetRandomAccount()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responseError("Error getting account"))
+		return
 	}
+	c.JSON(http.StatusOK, responseSuccess("Account retrieved successfully", []interface{}{account}))
+
 }
 
-func (ac *AccountController) GetAccountByIDHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		id, _ := strconv.Atoi(c.Param("id"))
-		account, err := accountService.GetAccountById(id)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, responseError("Error getting account"))
-			return
-		}
-		c.JSON(http.StatusOK, responseSuccess("Account retrieved successfully", []interface{}{account}))
+func (ac *AccountController) GetAccountByIDHandler(c *gin.Context) {
+
+	id, _ := strconv.Atoi(c.Param("id"))
+	account, err := ac.accountService.GetAccountById(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responseError("Error getting account"))
+		return
 	}
+	c.JSON(http.StatusOK, responseSuccess("Account retrieved successfully", []interface{}{account}))
+
 }
 
-func (ac *AccountController) GetHomelessAccountsHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		accounts, err := accountService.GetAllHomelessAccounts()
-		if err != nil {
-			c.JSON(http.StatusBadRequest, responseError("Error retrieving accounts"))
-			return
-		}
-		c.JSON(http.StatusOK, responseSuccess("Accounts retrieved successfully", []interface{}{accounts}))
+func (ac *AccountController) GetHomelessAccountsHandler(c *gin.Context) {
+
+	accounts, err := ac.accountService.GetAllHomelessAccounts()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responseError("Error retrieving accounts"))
 	}
+	c.JSON(http.StatusOK, responseSuccess("Accounts retrieved successfully", []interface{}{accounts}))
 }
 
 func (ac *AccountController) UpdateAddressHandler(accountService services.AccountServiceInterface) gin.HandlerFunc {

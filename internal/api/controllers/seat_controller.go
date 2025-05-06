@@ -11,20 +11,29 @@ type SeatResponse struct {
 	ID int `json:"id"`
 }
 
-func CreateSeatHandler(seatService services.SeatServiceInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var req request_models.CreateSeatRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
+type SeatController struct {
+	SeatService services.SeatServiceInterface
+}
 
-		_, err := seatService.AutoImportSeatWithRow(req.RoomID, req.Row)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
-
-		c.JSON(http.StatusCreated, responseSuccess("Seat created successfully", nil))
+func NewSeatController(seatService services.SeatServiceInterface) *SeatController {
+	return &SeatController{
+		SeatService: seatService,
 	}
+}
+
+func (sc *SeatController) CreateSeatHandler(c *gin.Context) {
+
+	var req request_models.CreateSeatRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
+		return
+	}
+
+	_, err := sc.SeatService.AutoImportSeatWithRow(int(req.RoomID), req.Row)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusCreated, responseSuccess("Seat created successfully", nil))
 }

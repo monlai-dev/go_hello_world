@@ -17,6 +17,16 @@ type RoomResponse struct {
 
 var validate = validator.New()
 
+type RoomController struct {
+	roomService services.RoomServiceInterface
+}
+
+func NewRoomController(roomService services.RoomServiceInterface) *RoomController {
+	return &RoomController{
+		roomService: roomService,
+	}
+}
+
 // CreateRoomHandler creates a new room
 // CreateRoomHandler godoc
 // @Summary Create a new room
@@ -29,24 +39,20 @@ var validate = validator.New()
 // @Param theaterId body int true "TheaterId"
 // @Success 200 {object} models.Room
 // @Router /rooms [post]
-func CreateRoomHandler(roomService services.RoomServiceInterface) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var req request_models.CreateRoomRequest
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
+func (rc *RoomController) CreateRoomHandler(c *gin.Context) {
 
-		if err := validate.Struct(&req); err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
+	var req request_models.CreateRoomRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
+	}
 
-		createdRoom, err := roomService.CreateRoom(req)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, responseError(err.Error()))
-			return
-		}
+	if err := validate.Struct(&req); err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
+	}
+
+	createdRoom, err := rc.roomService.CreateRoom(req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responseError(err.Error()))
 
 		c.JSON(http.StatusOK, responseSuccess("Room created successfully", []interface{}{RoomResponse{
 			ID:        int(createdRoom.ID),
