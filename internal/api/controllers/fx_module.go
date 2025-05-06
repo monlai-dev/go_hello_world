@@ -10,4 +10,5 @@ var Module = fx.Options(
 	fx.Provide(NewRoomController),
 	fx.Provide(NewSlotController),
 	fx.Provide(NewTheaterController),
-	fx.Provide(NewWebHookController))
+	fx.Provide(NewWebHookController),
+	fx.Provide(NewSeatController))
