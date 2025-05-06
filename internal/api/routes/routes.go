@@ -64,7 +64,7 @@ func RegisterRoutes(r *gin.Engine,
 	movieGroup := r.Group("/v1/movie")
 	movieGroup.Use(middleware.JWTAuthMiddleware(redisClient))
 	{
-		movieGroup.GET("/:id", movieController.DeleteMovieHandler)
+		movieGroup.GET("/:id", movieController.GetMovieByIDHandler)
 		movieGroup.POST("/create", movieController.CreateMovieHandler)
 		movieGroup.GET("/list-all", movieController.GetAllMoviesHandler)
 	}
